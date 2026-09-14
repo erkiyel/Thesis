@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Oncophil Pharmaceutical Management System"
+description = "A secure pharmaceutical management system foundation for Oncophil with Supabase authentication, admin and client role separation, and dedicated protected interfaces."
+version = "1.0.0"
+id = "artifacts/oncophil-system"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20309
+
+[services.development]
+run = "pnpm --filter @workspace/oncophil-system run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/oncophil-system", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/oncophil-system/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20309"
+BASE_PATH = "/"

@@ -1,0 +1,17 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "XvP79vT_E4kVAhpBmWffz"
+uri = "file://.local/conversation-workspace/files/supabase/schema.sql"
+type = "unspecified"
+title = "Oncophil Supabase Database Schema"
+description = "Approved Supabase schema for the Oncophil pharmaceutical management system, using the Waterfall / Linear Sequential Model and leaving historical-sales eligibility configurable."
+logical_id = "f2115cf6-1ccd-46a6-b17e-6faa9a552c0c"
+content_hash = "sha256:d766e401f06a16fa67c1befd0fdc33c043bfcc17d782a7a210a1621bb7253abc"
+size = 18380
+mtime_ms = 1789393648490
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/conversation:3fe31afd-5b56-4c92-9749-40ccf6f5effc/f2115cf6-1ccd-46a6-b17e-6faa9a552c0c/c6131e26-6d08-4d2d-ab0a-9e60490fc583"
+storage_version_token = "1789393659713327"
+content_type = "application/octet-stream"
+source_uri = "file://supabase/schema.sql"
