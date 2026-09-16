@@ -53,6 +53,7 @@ export function AppShell({ role, title, eyebrow, children }: AppShellProps) {
   const navItems = [
     { href: basePath, label: 'Home', icon: Home, exact: true },
     { href: `${basePath}/profile`, label: 'Profile & access', icon: CircleUserRound, exact: false },
+    ...(isAdmin ? [{ href: `${basePath}/users`, label: 'User management', icon: ShieldCheck, exact: false }] : []),
   ];
 
   const sidebar = (

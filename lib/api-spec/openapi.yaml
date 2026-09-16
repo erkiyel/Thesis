@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: admin-users
+    description: Admin-only client account management
 paths:
   /healthz:
     get:
@@ -24,6 +26,55 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /admin/clients:
+    get:
+      operationId: listAdminClients
+      tags: [admin-users]
+      summary: List client accounts
+      description: Returns client accounts for an authenticated administrator
+      responses:
+        "200":
+          description: Client accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClientAccount"
+        "401":
+          description: Authentication required
+        "403":
+          description: Administrator access required
+        "500":
+          description: Server error
+    post:
+      operationId: createAdminClient
+      tags: [admin-users]
+      summary: Create a client account
+      description: Creates a Supabase Auth user and matching client profile for an authenticated administrator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientAccountInput"
+      responses:
+        "201":
+          description: Client account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientAccount"
+        "400":
+          description: Invalid account details
+        "401":
+          description: Authentication required
+        "403":
+          description: Administrator access required
+        "409":
+          description: Email already exists
+        "500":
+          description: Server error
 components:
   schemas:
     HealthStatus:
@@ -32,5 +83,46 @@ components:
         status:
           type: string
       required:
+        - status
+    ClientAccountInput:
+      type: object
+      properties:
+        fullName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        email:
+          type: string
+          format: email
+        initialPassword:
+          type: string
+          minLength: 8
+          maxLength: 128
+      required:
+        - fullName
+        - email
+        - initialPassword
+    ClientAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [client]
+        status:
+          type: string
+          enum: [active, unconfirmed, disabled]
+      required:
+        - id
+        - fullName
+        - email
+        - role
         - status
 

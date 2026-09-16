@@ -5,7 +5,10 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import Login from '@/pages/login';
+import ForgotPassword from '@/pages/forgot-password';
+import ResetPassword from '@/pages/reset-password';
 import { FoundationHome, ProfilePage } from '@/pages/foundation';
+import UserManagement from '@/pages/user-management';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { getRole } from '@/lib/supabase';
 import {
@@ -86,11 +89,16 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/login" component={Login} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route path="/admin">
           <Protected role="admin"><FoundationHome role="admin" /></Protected>
         </Route>
         <Route path="/admin/profile">
           <Protected role="admin"><ProfilePage role="admin" /></Protected>
+        </Route>
+        <Route path="/admin/users">
+          <Protected role="admin"><UserManagement /></Protected>
         </Route>
         <Route path="/client">
           <Protected role="client"><FoundationHome role="client" /></Protected>

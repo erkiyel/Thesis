@@ -150,3 +150,38 @@ export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) throw new Error(`Unable to sign out: ${error.message}`);
 }
+
+export async function requestPasswordReset(email: string) {
+  if (!supabase) {
+    throw new Error(
+      'Supabase is not configured. Add the Supabase project URL and publishable key.',
+    );
+  }
+
+  const redirectTo = new URL(
+    `${import.meta.env.BASE_URL}reset-password`,
+    window.location.origin,
+  ).toString();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo,
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function getPasswordRecoverySession() {
+  if (!supabase) return null;
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw new Error(error.message);
+  return data.session;
+}
+
+export async function updatePassword(password: string) {
+  if (!supabase) {
+    throw new Error(
+      'Supabase is not configured. Add the Supabase project URL and publishable key.',
+    );
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw new Error(error.message);
+}

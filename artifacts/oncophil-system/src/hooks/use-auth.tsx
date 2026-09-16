@@ -9,11 +9,12 @@ import {
 import {
   getSession,
   resolveSession,
+  supabase,
   signIn,
   signOut,
-  supabase,
   type AuthSession,
 } from '@/lib/supabase';
+import { setAuthTokenGetter } from '@workspace/api-client-react';
 
 type AuthValue = {
   session: AuthSession | null;
@@ -56,9 +57,16 @@ function useAuthState(): AuthValue {
         });
     }).data.subscription;
 
+    setAuthTokenGetter(async () => {
+      if (!supabase) return null;
+      const { data } = await supabase.auth.getSession();
+      return data.session?.access_token ?? null;
+    });
+
     return () => {
       active = false;
       subscription?.unsubscribe();
+      setAuthTokenGetter(null);
     };
   }, []);
 

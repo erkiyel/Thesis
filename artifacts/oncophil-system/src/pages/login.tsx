@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,14 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('reset') === 'success') {
+      setResetMessage('Your password was changed. Sign in with your new password.');
+    }
+  }, []);
 
   useEffect(() => {
     if (!isLoading && session) {
@@ -110,6 +118,16 @@ export default function Login() {
                   </button>
                 </div>
               </div>
+              <div className="flex justify-end">
+                <Link href="/forgot-password" className="text-xs font-semibold text-primary underline-offset-4 hover:underline" data-testid="link-forgot-password">
+                  Forgot password?
+                </Link>
+              </div>
+              {resetMessage && (
+                <div className="rounded-lg border border-emerald-600/25 bg-emerald-600/5 px-4 py-3 text-sm leading-5 text-emerald-800" role="status" data-testid="status-password-reset-success">
+                  {resetMessage}
+                </div>
+              )}
               {error && (
                 <div className="rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm leading-5 text-destructive" role="alert" data-testid="status-login-error">{error}</div>
               )}
