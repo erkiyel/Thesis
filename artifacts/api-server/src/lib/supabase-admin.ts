@@ -6,6 +6,10 @@ type SupabaseAuthUser = {
   deleted_at?: string | null;
 };
 
+type SupabaseAuthUserListResponse = {
+  users?: SupabaseAuthUser[];
+};
+
 type SupabaseProfile = {
   id: string;
   full_name: string;
@@ -168,8 +172,16 @@ export async function deleteAuthUser(userId: string) {
 }
 
 export async function listAuthUsers() {
-  return adminRequest<SupabaseAuthUser[]>(
+  const payload = await adminRequest<
+    SupabaseAuthUser[] | SupabaseAuthUserListResponse
+  >(
     "/auth/v1/admin/users?page=1&per_page=1000",
+  );
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload.users)) return payload.users;
+  throw new SupabaseAdminError(
+    502,
+    "Supabase Auth returned an invalid user list response.",
   );
 }
 
