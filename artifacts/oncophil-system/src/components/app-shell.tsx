@@ -7,6 +7,7 @@ import {
   Home,
   LogOut,
   Menu,
+  Package,
   ShieldCheck,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -53,7 +54,12 @@ export function AppShell({ role, title, eyebrow, children }: AppShellProps) {
   const navItems = [
     { href: basePath, label: 'Home', icon: Home, exact: true },
     { href: `${basePath}/profile`, label: 'Profile & access', icon: CircleUserRound, exact: false },
-    ...(isAdmin ? [{ href: `${basePath}/users`, label: 'User management', icon: ShieldCheck, exact: false }] : []),
+    ...(isAdmin
+      ? [
+          { href: `${basePath}/users`, label: 'User management', icon: ShieldCheck, exact: false },
+          { href: `${basePath}/inventory`, label: 'Medicines & inventory', icon: Package, exact: false },
+        ]
+      : []),
   ];
 
   const sidebar = (
@@ -112,7 +118,7 @@ export function AppShell({ role, title, eyebrow, children }: AppShellProps) {
             <LogOut size={15} /> Sign out
           </Button>
         </div>
-        <p className="mt-5 px-1 font-mono text-[10px] uppercase tracking-[0.16em] text-sidebar-foreground/35">Waterfall / Linear Sequential Model · Phase 1</p>
+        <p className="mt-5 px-1 font-mono text-[10px] uppercase tracking-[0.16em] text-sidebar-foreground/35">Waterfall / Linear Sequential Model · Phase 2</p>
       </div>
     </aside>
   );

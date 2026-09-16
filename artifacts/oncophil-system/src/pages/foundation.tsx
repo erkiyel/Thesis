@@ -3,7 +3,7 @@ import { ArrowUpRight, CheckCircle2, Clock3, FileLock2, KeyRound, ShieldCheck } 
 import { AppShell } from '@/components/app-shell';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
-import { getRole, getUserAvatar, getUserLabel, type UserRole } from '@/lib/supabase';
+import { getUserAvatar, getUserLabel, type UserRole } from '@/lib/supabase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export function FoundationHome({ role }: { role: UserRole }) {
@@ -27,11 +27,16 @@ export function FoundationHome({ role }: { role: UserRole }) {
             </h2>
             <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">
               {isAdmin
-                ? 'Your administrative workspace is ready. Phase 1 is focused on secure access, role boundaries, and a dependable place to begin.'
+                ? 'Your administrative workspace is ready. Manage client access and keep the medicine catalogue accurate for the next operational phases.'
                 : 'Your client workspace is ready. The foundation is intentionally quiet while the next Waterfall / Linear Sequential Model phase is prepared.'}
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link href={`${basePath}/profile`} className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:brightness-105" data-testid="link-open-profile">
+              {isAdmin && (
+                <Link href="/admin/inventory" className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:brightness-105" data-testid="link-open-inventory">
+                  Open inventory <ArrowUpRight size={15} />
+                </Link>
+              )}
+              <Link href={`${basePath}/profile`} className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:bg-secondary" data-testid="link-open-profile">
                 Review profile & access <ArrowUpRight size={15} />
               </Link>
               <span className="inline-flex h-10 items-center gap-2 rounded-md border border-border px-4 text-xs text-muted-foreground">
@@ -58,7 +63,7 @@ export function FoundationHome({ role }: { role: UserRole }) {
               {[
                 ['Identity verified', 'Your Supabase Auth session is active.', true],
                 ['Role boundary applied', `You are viewing the ${role} workspace.`, true],
-                ['Operational modules', 'No business-data modules are enabled in Phase 1.', false],
+                ['Operational modules', isAdmin ? 'Medicine inventory is available in this phase.' : 'Operational modules will appear in later phases.', isAdmin],
               ].map(([title, copy, complete], index) => (
                 <div key={String(title)} className="flex gap-4 border-l border-border pb-7 pl-5 last:pb-0">
                   <span className={`-ml-[26px] flex size-3 shrink-0 items-center justify-center rounded-full border-4 border-card ${complete ? 'bg-primary' : 'bg-muted-foreground/40'}`} aria-hidden="true" />
@@ -66,7 +71,11 @@ export function FoundationHome({ role }: { role: UserRole }) {
                     <p className="text-sm font-semibold">{title}</p>
                     <p className="mt-1 text-sm leading-5 text-muted-foreground">{copy}</p>
                   </div>
-                  {index === 2 && <span className="ml-auto rounded-full bg-secondary px-2 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">queued</span>}
+                  {index === 2 && (
+                    <span className="ml-auto rounded-full bg-secondary px-2 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-muted-foreground">
+                      {complete ? 'ready' : 'queued'}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>

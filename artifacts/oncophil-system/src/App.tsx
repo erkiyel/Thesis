@@ -9,6 +9,9 @@ import ForgotPassword from '@/pages/forgot-password';
 import ResetPassword from '@/pages/reset-password';
 import { FoundationHome, ProfilePage } from '@/pages/foundation';
 import UserManagement from '@/pages/user-management';
+import AdminInventory from '@/pages/admin-inventory';
+import ClientHome from '@/pages/client-home';
+import ClientOrderPlaceholder from '@/pages/client-order';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { getRole } from '@/lib/supabase';
 import {
@@ -91,20 +94,30 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
-        <Route path="/admin">
-          <Protected role="admin"><FoundationHome role="admin" /></Protected>
-        </Route>
         <Route path="/admin/profile">
           <Protected role="admin"><ProfilePage role="admin" /></Protected>
         </Route>
         <Route path="/admin/users">
           <Protected role="admin"><UserManagement /></Protected>
         </Route>
-        <Route path="/client">
-          <Protected role="client"><FoundationHome role="client" /></Protected>
+        <Route path="/admin/inventory">
+          <Protected role="admin"><AdminInventory /></Protected>
+        </Route>
+        <Route path="/admin">
+          <Protected role="admin"><FoundationHome role="admin" /></Protected>
+        </Route>
+        <Route path="/client/order/:id">
+          {(params) => (
+            <Protected role="client">
+              <ClientOrderPlaceholder medicineId={params.id ?? ''} />
+            </Protected>
+          )}
         </Route>
         <Route path="/client/profile">
           <Protected role="client"><ProfilePage role="client" /></Protected>
+        </Route>
+        <Route path="/client">
+          <Protected role="client"><ClientHome /></Protected>
         </Route>
         <Route path="/" component={Home} />
         <Route component={NotFound} />
