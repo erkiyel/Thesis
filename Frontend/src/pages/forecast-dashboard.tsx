@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AlertTriangle, BrainCircuit, FileSpreadsheet, RefreshCw, TrendingUp } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
+import { DatabaseLoading } from '@/components/database-loading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiRequest, formatDate } from '@/lib/api';
@@ -52,7 +53,7 @@ export default function ForecastDashboard() {
   const [selectedRunId, setSelectedRunId] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [previewing, setPreviewing] = useState(false);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
@@ -175,7 +176,7 @@ export default function ForecastDashboard() {
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Historical sales</p>
         <h3 className="mt-2 font-serif text-2xl font-extrabold">Most sales per medicine</h3>
         <p className="mt-2 text-sm text-muted-foreground">Share of actual quantity sold across medicines. Forecast quantities are excluded.</p>
-        {salesByMedicine.length ? <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(220px,0.8fr)] lg:items-center">
+        {loading ? <DatabaseLoading className="mt-5" label="Loading historical sales" /> : error ? null : salesByMedicine.length ? <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(220px,0.8fr)] lg:items-center">
           <div className="h-[320px] min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -203,7 +204,7 @@ export default function ForecastDashboard() {
         <h3 className="mt-2 font-serif text-2xl font-extrabold">Overall monthly sales</h3>
         <p className="mt-2 text-sm text-muted-foreground">Total quantity sold each month, with the Linear Regression forecast shown after the historical period.</p>
         <div className="mt-5 h-[340px] w-full">
-          {monthlySales.length ? <ResponsiveContainer width="100%" height="100%"><LineChart data={monthlySales} margin={{ top: 8, right: 18, left: 8, bottom: 8 }}>
+          {loading ? <DatabaseLoading label="Loading monthly sales" /> : error ? null : monthlySales.length ? <ResponsiveContainer width="100%" height="100%"><LineChart data={monthlySales} margin={{ top: 8, right: 18, left: 8, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="period" tick={{ fontSize: 11 }} label={{ value: 'Month', position: 'insideBottom', offset: -4, fontSize: 12 }} />
             <YAxis allowDecimals={false} tick={{ fontSize: 11 }} label={{ value: 'Total sales quantity', angle: -90, position: 'insideLeft', fontSize: 12 }} />
@@ -221,9 +222,9 @@ export default function ForecastDashboard() {
           <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead><tr className="border-b border-border font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground"><th className="pb-3 pr-4">Medicine</th><th className="pb-3 pr-4">Current stock</th><th className="pb-3 pr-4">Forecast demand</th><th className="pb-3 pr-4">Expected requirement</th><th className="pb-3 pr-4">Suggested additional</th><th className="pb-3">Recommendation</th></tr></thead><tbody>{selectedRun.medicines.map((medicine) => <tr key={medicine.medicineId} className="border-b border-border/60"><td className="py-3 pr-4 font-semibold">{medicine.medicineName}{medicine.inInventory === false && <span className="mt-1 block text-xs font-normal text-muted-foreground">Not currently in inventory</span>}</td><td className="py-3 pr-4">{medicine.inInventory === false ? 'Not currently in inventory' : medicine.currentStock ?? '—'}</td><td className="py-3 pr-4">{medicine.forecastDemand == null ? '—' : medicine.forecastDemand}</td><td className="py-3 pr-4">{medicine.expectedStockRequirement == null ? '—' : medicine.expectedStockRequirement}</td><td className="py-3 pr-4">{medicine.suggestedAdditionalStock == null ? '—' : medicine.suggestedAdditionalStock}</td><td className="py-3"><span className="font-medium">{medicine.recommendation}</span>{medicine.reason && <span className="mt-1 block max-w-64 text-xs text-muted-foreground">{medicine.reason}</span>}</td></tr>)}</tbody></table></div>
         </section>}
 
-      {!selectedRun && <section className="rounded-2xl border border-dashed border-border p-10 text-center"><p className="font-serif text-xl font-bold">{loading ? 'Loading forecast history…' : 'No forecast run yet.'}</p><p className="mt-2 text-sm text-muted-foreground">Forecasts require at least four monthly observations for one medicine, using delivered system orders, an uploaded workbook, or both.</p></section>}
+      {!selectedRun && <section className="rounded-2xl border border-dashed border-border p-10 text-center">{loading ? <DatabaseLoading label="Loading forecast history" /> : error ? null : <><p className="font-serif text-xl font-bold">No forecast run yet.</p><p className="mt-2 text-sm text-muted-foreground">Forecasts require at least four monthly observations for one medicine, using delivered system orders, an uploaded workbook, or both.</p></>}</section>}
 
-      <section className="rounded-2xl border border-border bg-card p-6 sm:p-8"><div className="flex items-center justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Forecast history</p><h3 className="mt-2 font-serif text-2xl font-extrabold">Previous runs</h3></div><Button variant="outline" size="sm" disabled={loading} onClick={() => void refresh()}><RefreshCw size={14} /> Refresh</Button></div>{runs.length === 0 ? <p className="mt-5 text-sm text-muted-foreground">No saved forecast executions.</p> : <div className="mt-5 space-y-2">{runs.map((run) => <button key={run.id} onClick={() => setSelectedRunId(run.id)} className={`flex w-full flex-wrap items-center justify-between gap-3 rounded-xl border p-4 text-left ${run.id === selectedRunId ? 'border-primary bg-secondary/50' : 'border-border hover:bg-secondary/30'}`}><span><span className="block text-sm font-semibold">{formatDate(run.createdAt)}</span><span className="mt-1 block text-xs text-muted-foreground">{run.historicalStartDate ?? '—'} to {run.historicalEndDate ?? '—'} · {run.forecastHorizon} month horizon · {run.forecastedMedicineCount} medicines</span></span><span className="text-xs text-muted-foreground">MAE {metricLabel(run.metrics?.mae)} · MAPE {metricLabel(run.metrics?.mape, '%')} · RMSE {metricLabel(run.metrics?.rmse)}</span></button>)}</div>}{runs.some((run) => !run.metrics) && <p className="mt-3 text-xs text-muted-foreground">Metrics are available for runs created by this implementation. Earlier database runs have no stored evaluation metrics.</p>}</section>
+      <section className="rounded-2xl border border-border bg-card p-6 sm:p-8"><div className="flex items-center justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Forecast history</p><h3 className="mt-2 font-serif text-2xl font-extrabold">Previous runs</h3></div><Button variant="outline" size="sm" disabled={loading} onClick={() => void refresh()}><RefreshCw size={14} /> Refresh</Button></div>{loading ? <DatabaseLoading className="mt-5" label="Loading saved forecasts" /> : error ? null : runs.length === 0 ? <p className="mt-5 text-center text-sm text-muted-foreground">No saved forecast executions.</p> : <div className="mt-5 space-y-2">{runs.map((run) => <button key={run.id} onClick={() => setSelectedRunId(run.id)} className={`flex w-full flex-wrap items-center justify-between gap-3 rounded-xl border p-4 text-left ${run.id === selectedRunId ? 'border-primary bg-secondary/50' : 'border-border hover:bg-secondary/30'}`}><span><span className="block text-sm font-semibold">{formatDate(run.createdAt)}</span><span className="mt-1 block text-xs text-muted-foreground">{run.historicalStartDate ?? '—'} to {run.historicalEndDate ?? '—'} · {run.forecastHorizon} month horizon · {run.forecastedMedicineCount} medicines</span></span><span className="text-xs text-muted-foreground">MAE {metricLabel(run.metrics?.mae)} · MAPE {metricLabel(run.metrics?.mape, '%')} · RMSE {metricLabel(run.metrics?.rmse)}</span></button>)}</div>}{!loading && !error && runs.some((run) => !run.metrics) && <p className="mt-3 text-xs text-muted-foreground">Metrics are available for runs created by this implementation. Earlier database runs have no stored evaluation metrics.</p>}</section>
       {latestRun && <p className="text-xs text-muted-foreground">The current dashboard is showing {selectedRunId === latestRun.id ? 'the latest saved run' : 'a previous saved run'}.</p>}
     </div>
   </AppShell>;

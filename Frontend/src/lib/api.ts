@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabase';
 export type Medicine = {
   id: string;
   name: string;
-  description: string;
   price: number;
   stockQuantity: number;
   isAvailable: boolean;

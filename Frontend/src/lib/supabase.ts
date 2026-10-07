@@ -106,20 +106,6 @@ export function getUserAvatar(user: AuthUser | null) {
   return user?.profile?.avatar_url?.trim() || null;
 }
 
-const profileImageBucket = 'medicine-images';
-
-function profileImagePathFromUrl(value: string | null) {
-  if (!value) return null;
-  try {
-    const marker = `/storage/v1/object/public/${profileImageBucket}/`;
-    const pathname = new URL(value).pathname;
-    const markerIndex = pathname.indexOf(marker);
-    return markerIndex < 0 ? null : decodeURIComponent(pathname.slice(markerIndex + marker.length));
-  } catch {
-    return null;
-  }
-}
-
 function requireSupabase() {
   if (!supabase) {
     throw new Error('Supabase is not configured. Add the Supabase project URL and publishable key.');
@@ -152,65 +138,6 @@ export async function requestEmailChange(email: string) {
 
   const { error } = await client.auth.updateUser({ email: normalizedEmail });
   if (error) throw new Error(error.message);
-}
-
-export async function saveProfileImage(userId: string, file: File, previousUrl: string | null) {
-  const client = requireSupabase();
-  const extensionByType: Record<string, string> = {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp',
-  };
-  const extension = extensionByType[file.type];
-  if (!extension) throw new Error('Profile photos must be JPG, PNG, or WebP.');
-
-  const objectPath = `${userId}/${crypto.randomUUID()}.${extension}`;
-  const { error: uploadError } = await client.storage
-    .from(profileImageBucket)
-    .upload(objectPath, file, { contentType: file.type, cacheControl: '3600' });
-  if (uploadError) throw new Error(`Profile photo upload failed: ${uploadError.message}`);
-
-  const { data } = client.storage.from(profileImageBucket).getPublicUrl(objectPath);
-  const { data: profile, error: profileError } = await client
-    .from('profiles')
-    .update({ avatar_url: data.publicUrl })
-    .eq('id', userId)
-    .select('id')
-    .maybeSingle();
-  if (profileError || !profile) {
-    await client.storage.from(profileImageBucket).remove([objectPath]);
-    throw new Error(`Profile photo could not be saved: ${profileError?.message ?? 'your profile could not be updated.'}`);
-  }
-
-  const previousPath = profileImagePathFromUrl(previousUrl);
-  const cleanup = previousPath
-    ? await client.storage.from(profileImageBucket).remove([previousPath])
-    : null;
-  return {
-    url: data.publicUrl,
-    warning: cleanup?.error ? `The new photo was saved, but the previous file could not be removed: ${cleanup.error.message}` : null,
-  };
-}
-
-export async function removeProfileImage(userId: string, previousUrl: string | null) {
-  const client = requireSupabase();
-  const { data: profile, error: profileError } = await client
-    .from('profiles')
-    .update({ avatar_url: '' })
-    .eq('id', userId)
-    .select('id')
-    .maybeSingle();
-  if (profileError || !profile) {
-    throw new Error(`Profile photo could not be removed: ${profileError?.message ?? 'your profile could not be updated.'}`);
-  }
-
-  const previousPath = profileImagePathFromUrl(previousUrl);
-  const cleanup = previousPath
-    ? await client.storage.from(profileImageBucket).remove([previousPath])
-    : null;
-  return cleanup?.error
-    ? `The profile photo was cleared, but its stored file could not be deleted: ${cleanup.error.message}`
-    : null;
 }
 
 export async function signIn(
@@ -290,5 +217,23 @@ export async function updatePassword(password: string) {
   }
 
   const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw new Error(error.message);
+}
+
+export async function changePassword(currentPassword: string, newPassword: string) {
+  const client = requireSupabase();
+  const { data: current, error: userError } = await client.auth.getUser();
+  if (userError || !current.user?.email) {
+    throw new Error(userError?.message ?? 'Unable to identify the signed-in account.');
+  }
+
+  const { data: verified, error: verificationError } = await client.auth.signInWithPassword({
+    email: current.user.email,
+    password: currentPassword,
+  });
+  if (verificationError) throw new Error(verificationError.message);
+  if (verified.user.id !== current.user.id) throw new Error('The current password could not be verified for this account.');
+
+  const { error } = await client.auth.updateUser({ password: newPassword });
   if (error) throw new Error(error.message);
 }

@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/use-auth';
-import { getRole, getUserAvatar, getUserLabel, removeProfileImage, requestEmailChange, saveProfileImage, updateOwnProfileName, updatePassword, type UserRole } from '@/lib/supabase';
+import { changePassword as updatePasswordWithCurrent, getRole, getUserAvatar, getUserLabel, requestEmailChange, updateOwnProfileName, type UserRole } from '@/lib/supabase';
+import { apiRequest } from '@/lib/api';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export function FoundationHome({ role }: { role: UserRole }) {
@@ -111,8 +112,10 @@ export function ProfilePage({ role }: { role: UserRole }) {
   const [emailBusy, setEmailBusy] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [emailMessage, setEmailMessage] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordBusy, setPasswordBusy] = useState(false);
@@ -157,7 +160,9 @@ export function ProfilePage({ role }: { role: UserRole }) {
     setPhotoError('');
     setPhotoMessage('');
     try {
-      const result = await saveProfileImage(user.id, selectedPhoto, storedAvatarUrl);
+      const form = new FormData();
+      form.append('image', selectedPhoto);
+      const result = await apiRequest<{ url: string; warning: string | null }>('/profile/avatar', { method: 'POST', body: form });
       setPhotoUrlOverride(result.url);
       setSelectedPhoto(null);
       setPhotoMessage(result.warning ?? 'Profile photo updated.');
@@ -175,10 +180,10 @@ export function ProfilePage({ role }: { role: UserRole }) {
     setPhotoError('');
     setPhotoMessage('');
     try {
-      const warning = await removeProfileImage(user.id, storedAvatarUrl);
+      const result = await apiRequest<{ warning: string | null }>('/profile/avatar', { method: 'DELETE' });
       setPhotoUrlOverride('');
       setSelectedPhoto(null);
-      setPhotoMessage(warning ?? 'Profile photo removed.');
+      setPhotoMessage(result.warning ?? 'Profile photo removed.');
       await refreshUser();
     } catch (cause) {
       setPhotoError(cause instanceof Error ? cause.message : 'Unable to remove the profile photo.');
@@ -248,6 +253,10 @@ export function ProfilePage({ role }: { role: UserRole }) {
     event.preventDefault();
     setPasswordError('');
     setPasswordMessage('');
+    if (!currentPassword) {
+      setPasswordError('Enter your current password.');
+      return;
+    }
     if (newPassword.length < 8) {
       setPasswordError('Use a password with at least 8 characters.');
       return;
@@ -258,7 +267,8 @@ export function ProfilePage({ role }: { role: UserRole }) {
     }
     setPasswordBusy(true);
     try {
-      await updatePassword(newPassword);
+      await updatePasswordWithCurrent(currentPassword, newPassword);
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setPasswordMessage('Your password has been changed.');
@@ -355,6 +365,15 @@ export function ProfilePage({ role }: { role: UserRole }) {
         <section className="max-w-3xl rounded-2xl border border-border bg-card p-6 sm:p-8">
           <div className="flex items-center gap-3"><KeyRound size={18} className="text-primary" /><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Account security</p><h3 className="mt-1 font-serif text-2xl font-extrabold">Change Password</h3></div></div>
           <form className="mt-6 grid gap-4 sm:max-w-lg" onSubmit={(event) => void changePassword(event)}>
+            <div className="grid gap-2">
+              <Label htmlFor="current-password">Current Password</Label>
+              <div className="relative">
+                <Input id="current-password" type={showCurrentPassword ? 'text' : 'password'} autoComplete="current-password" required value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} className="pr-10" />
+                <button type="button" aria-label={showCurrentPassword ? 'Hide current password' : 'Show current password'} aria-pressed={showCurrentPassword} onClick={() => setShowCurrentPassword((visible) => !visible)} className="absolute right-1 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  {showCurrentPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+                </button>
+              </div>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="new-password">New Password</Label>
               <div className="relative">

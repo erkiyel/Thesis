@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { UserPlus, UsersRound } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppShell } from '@/components/app-shell';
+import { DatabaseLoading } from '@/components/database-loading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -112,7 +113,7 @@ export default function UserManagement() {
               </div>
               {!clients.isLoading && clients.data && <span className="rounded-full bg-secondary px-2.5 py-1 font-mono text-[10px] text-muted-foreground">{clients.data.length} clients</span>}
             </div>
-            {clients.isLoading && <div className="mt-8 space-y-3" role="status" data-testid="status-client-list-loading"><div className="h-12 animate-pulse rounded-lg bg-muted" /><div className="h-12 animate-pulse rounded-lg bg-muted" /></div>}
+            {clients.isLoading && <div data-testid="status-client-list-loading"><DatabaseLoading className="mt-4" label="Loading client directory" /></div>}
             {clients.isError && <div className="mt-8 rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm leading-5 text-destructive" role="alert" data-testid="status-client-list-error">{errorMessage(clients.error)}</div>}
             {!clients.isLoading && !clients.isError && clients.data?.length === 0 && <div className="mt-8 rounded-lg border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground" data-testid="status-client-list-empty">No client accounts found yet.</div>}
             {!clients.isLoading && !clients.isError && !!clients.data?.length && (

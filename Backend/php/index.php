@@ -12,7 +12,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Authorization, Content-Type');
-header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS');
 
 // Load local server settings for PHP's built-in development server. Hosting
 // providers should continue to supply these values as environment variables.
@@ -212,7 +212,6 @@ function medicineOutput(array $row): array {
     return [
         'id' => (string)($row['id'] ?? ''),
         'name' => (string)($row['name'] ?? $row['medicine_name'] ?? ''),
-        'description' => (string)($row['description'] ?? ''),
         'price' => money($row['price'] ?? 0),
         'stockQuantity' => (int)($row['stock_quantity'] ?? $row['stock'] ?? $row['quantity'] ?? 0),
         'isAvailable' => (bool)($row['is_available'] ?? $row['available'] ?? true),
@@ -279,18 +278,18 @@ function loadOrderDetails(array $order): array {
     ] : [], $trackingOutput);
 }
 
-function imageUpload(?string $existing = null): ?string {
+function imageUpload(?string $existing = null, string $folder = ''): ?string {
     if (!isset($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) return $existing;
     $file = $_FILES['image'];
-    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) throw new ApiException(400, 'The medicine image could not be uploaded.');
-    if (($file['size'] ?? 0) > 5 * 1024 * 1024) throw new ApiException(400, 'Medicine images must be 5 MB or smaller.');
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) throw new ApiException(400, 'The image could not be uploaded.');
+    if (($file['size'] ?? 0) > 5 * 1024 * 1024) throw new ApiException(400, 'Images must be 5 MB or smaller.');
     $mime = mime_content_type($file['tmp_name']) ?: '';
     $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
-    if (!isset($allowed[$mime])) throw new ApiException(400, 'Medicine images must be JPG, PNG, or WebP.');
+    if (!isset($allowed[$mime])) throw new ApiException(400, 'Images must be JPG, PNG, or WebP.');
     // This must match the existing public Storage bucket. Never fall back to
     // a guessed bucket name: Storage reports a missing bucket as an upload error.
     $bucket = envValue('SUPABASE_MEDICINE_BUCKET', false) ?: 'medicine-images';
-    $objectPath = bin2hex(random_bytes(16)) . '.' . $allowed[$mime];
+    $objectPath = ($folder !== '' ? trim($folder, '/') . '/' : '') . bin2hex(random_bytes(16)) . '.' . $allowed[$mime];
     $base = rtrim(envValue('NEXT_PUBLIC_SUPABASE_URL'), '/');
     $key = envValue('SUPABASE_SERVICE_ROLE_KEY');
     $content = file_get_contents($file['tmp_name']);
@@ -300,6 +299,30 @@ function imageUpload(?string $existing = null): ?string {
         throw new ApiException(502, 'Supabase Storage upload failed: ' . payloadMessage($payload, 'check that the medicine-images bucket is available to the server.'));
     }
     return $base . '/storage/v1/object/public/' . rawurlencode($bucket) . '/' . $objectPath;
+}
+
+function removeOwnedProfileImage(?string $publicUrl, string $userId): ?string {
+    if (!$publicUrl) return null;
+    $bucket = envValue('SUPABASE_MEDICINE_BUCKET', false) ?: 'medicine-images';
+    $path = parse_url($publicUrl, PHP_URL_PATH);
+    $marker = '/storage/v1/object/public/' . rawurlencode($bucket) . '/';
+    $markerPosition = is_string($path) ? strpos($path, $marker) : false;
+    if ($markerPosition === false) return 'The profile was updated, but the previous image could not be removed from its storage location.';
+    $objectPath = rawurldecode(substr($path, $markerPosition + strlen($marker)));
+    if (!str_starts_with($objectPath, $userId . '/')) return 'The profile was updated, but the previous image is outside your account folder and was left in storage.';
+
+    $base = rtrim(envValue('NEXT_PUBLIC_SUPABASE_URL'), '/');
+    $key = envValue('SUPABASE_SERVICE_ROLE_KEY');
+    $encodedPath = implode('/', array_map('rawurlencode', explode('/', $objectPath)));
+    try {
+        [$response, $status] = httpRequest($base . '/storage/v1/object/' . rawurlencode($bucket) . '/' . $encodedPath, 'DELETE', ["apikey: {$key}", "Authorization: Bearer {$key}", 'Accept: application/json'], null, 25);
+    } catch (Throwable) {
+        return 'The profile was updated, but the previous image could not be removed from storage.';
+    }
+    if ($status < 200 || $status >= 300) {
+        return 'The profile was updated, but the previous image could not be removed from storage.';
+    }
+    return null;
 }
 
 function forecastRuntimeDirectory(): string {
@@ -438,6 +461,23 @@ function route(string $method, string $path): void {
         $rows = selectTable('medicines', '*', $user['role'] === 'admin' ? '' : 'is_available=eq.true&stock_quantity=gt.0&order=name.asc');
         respond(array_map('medicineOutput', $rows));
     }
+    if ($path === '/profile/avatar' && $method === 'POST') {
+        $avatarUrl = imageUpload(null, $user['id']);
+        if (!$avatarUrl) fail(400, 'Choose a profile photo to upload.');
+        $previousUrl = (string)($user['profile']['avatar_url'] ?? '');
+        try {
+            updateTable('profiles', 'id=eq.' . rawurlencode($user['id']), ['avatar_url' => $avatarUrl]);
+        } catch (Throwable $error) {
+            removeOwnedProfileImage($avatarUrl, $user['id']);
+            throw $error;
+        }
+        respond(['url' => $avatarUrl, 'warning' => removeOwnedProfileImage($previousUrl, $user['id'])]);
+    }
+    if ($path === '/profile/avatar' && $method === 'DELETE') {
+        $previousUrl = (string)($user['profile']['avatar_url'] ?? '');
+        updateTable('profiles', 'id=eq.' . rawurlencode($user['id']), ['avatar_url' => '']);
+        respond(['warning' => removeOwnedProfileImage($previousUrl, $user['id'])]);
+    }
     if ($path === '/admin/medicines' && $method === 'POST') {
         requireAdmin();
         $input = $_POST ?: jsonBody();
@@ -445,7 +485,6 @@ function route(string $method, string $path): void {
         if ($name === '') fail(400, 'Medicine name is required.');
         $data = [
             'name' => $name,
-            'description' => trim((string)($input['description'] ?? '')),
             'price' => money($input['price'] ?? 0),
             'stock_quantity' => max(0, (int)($input['stockQuantity'] ?? 0)),
             'is_available' => filter_var($input['isAvailable'] ?? true, FILTER_VALIDATE_BOOLEAN),
@@ -468,13 +507,34 @@ function route(string $method, string $path): void {
         if (!$existing) fail(404, 'Medicine not found.');
         $data = [
             'name' => trim((string)($input['name'] ?? $existing['name'] ?? '')),
-            'description' => trim((string)($input['description'] ?? $existing['description'] ?? '')),
             'price' => money($input['price'] ?? $existing['price'] ?? 0),
             'stock_quantity' => max(0, (int)($input['stockQuantity'] ?? $existing['stock_quantity'] ?? 0)),
             'is_available' => filter_var($input['isAvailable'] ?? ($existing['is_available'] ?? true), FILTER_VALIDATE_BOOLEAN),
             'image_url' => imageUpload($existing['image_url'] ?? null),
         ];
         respond(medicineOutput(updateTable('medicines', 'id=eq.' . rawurlencode($match[1]), $data)));
+    }
+    if (preg_match('#^/admin/medicines/([^/]+)$#', $path, $match) && $method === 'DELETE') {
+        requireAdmin();
+        $medicineId = (string)$match[1];
+        $medicine = oneTable('medicines', 'id=eq.' . rawurlencode($medicineId));
+        if (!$medicine) fail(404, 'Medicine not found.');
+        if (selectTable('order_items', 'id', 'medicine_id=eq.' . rawurlencode($medicineId) . '&limit=1')) {
+            fail(409, 'This medicine is referenced by order history and cannot be deleted. You can mark it unavailable instead.');
+        }
+        if (selectTable('forecast_results', 'id', 'medicine_id=eq.' . rawurlencode($medicineId) . '&limit=1')) {
+            fail(409, 'This medicine is referenced by forecast history and cannot be deleted. You can mark it unavailable instead.');
+        }
+        try {
+            $deleted = supabaseRequest('/rest/v1/medicines?id=eq.' . rawurlencode($medicineId) . '&select=id', 'DELETE', null, ['Prefer: return=representation']);
+        } catch (ApiException $error) {
+            if (preg_match('/foreign key|violates.*constraint|23503/i', $error->getMessage())) {
+                fail(409, 'This medicine is referenced by existing records and cannot be deleted. You can mark it unavailable instead.');
+            }
+            throw $error;
+        }
+        if (!is_array($deleted) || !$deleted) fail(404, 'Medicine not found.');
+        respond(['id' => $medicineId, 'deleted' => true]);
     }
 
     if ($path === '/orders' && $method === 'GET') {
@@ -519,10 +579,20 @@ function route(string $method, string $path): void {
         $allowedStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
         $status = strtolower((string)($input['status'] ?? $order['order_status'] ?? 'pending'));
         if (!in_array($status, $allowedStatuses, true)) fail(400, 'Invalid order status.');
-        $updated = updateTable('orders', 'id=eq.' . rawurlencode($match[1]), ['order_status' => $status]);
+        $paymentStatus = null;
         if (isset($input['paymentStatus'])) {
+            $paymentStatus = strtolower((string)$input['paymentStatus']);
+            if (!in_array($paymentStatus, ['unpaid', 'pending', 'paid', 'refunded'], true)) fail(400, 'Invalid payment status.');
+        }
+        $updated = updateTable('orders', 'id=eq.' . rawurlencode($match[1]), ['order_status' => $status]);
+        if ($paymentStatus !== null) {
             $payments = selectTable('payments', '*', 'order_id=eq.' . rawurlencode($match[1]) . '&limit=1');
-            if ($payments) updateTable('payments', 'id=eq.' . rawurlencode((string)$payments[0]['id']), ['payment_status' => strtolower((string)$input['paymentStatus'])]);
+            if ($payments) {
+                $paymentData = ['payment_status' => $paymentStatus];
+                if ($paymentStatus === 'paid') $paymentData['paid_at'] = gmdate('c');
+                elseif (in_array($paymentStatus, ['unpaid', 'pending'], true)) $paymentData['paid_at'] = null;
+                updateTable('payments', 'id=eq.' . rawurlencode((string)$payments[0]['id']), $paymentData);
+            }
         }
         if (isset($input['location']) || isset($input['estimatedDelivery']) || isset($input['notes'])) {
             insertTable('order_tracking_events', ['order_id' => $match[1], 'status' => $status, 'location' => trim((string)($input['location'] ?? '')), 'estimated_delivery_at' => $input['estimatedDelivery'] ?? null, 'notes' => trim((string)($input['notes'] ?? '')), 'recorded_by' => $user['id']]);
