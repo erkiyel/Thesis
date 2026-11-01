@@ -46,7 +46,7 @@ const chartColors = ['#477b62', '#c47c35', '#6382a6', '#a35d73', '#8a7cba', '#55
 type MedicineSalesSlice = { medicineId: string; medicineName: string; quantity: number };
 type MonthlySalesPoint = { period: string; actual: number | null; forecast: number | null };
 
-export default function ForecastDashboard() {
+export default function ForecastDashboard({ role = 'admin' }: { role?: 'admin' | 'manager' }) {
   const [runs, setRuns] = useState<ForecastRun[]>([]);
   const [imports, setImports] = useState<HistoricalImport[]>([]);
   const [importId, setImportId] = useState('');
@@ -148,7 +148,7 @@ export default function ForecastDashboard() {
     } finally { setRunning(false); }
   }
 
-  return <AppShell role="admin" title="Admin home" eyebrow="Operations workspace">
+  return <AppShell role={role} title={role === 'admin' ? 'Admin home' : 'Manager home'} eyebrow="Operations workspace">
     <div className="page-enter space-y-8">
       <div>
         <h2 className="mt-3 font-serif text-4xl font-extrabold tracking-[-0.045em]">Sales forecasting</h2>

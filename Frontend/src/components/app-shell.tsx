@@ -53,14 +53,17 @@ export function AppShell({ role, title, eyebrow, children }: AppShellProps) {
   const label = getUserLabel(user);
   const avatarUrl = getUserAvatar(user);
   const isAdmin = role === 'admin';
-  const basePath = isAdmin ? '/admin' : '/client';
+  const isManager = role === 'manager';
+  const isOperations = isAdmin || isManager;
+  const roleLabel = isAdmin ? 'Administrator' : isManager ? 'Manager' : 'Partnership Account';
+  const basePath = isAdmin ? '/admin' : isManager ? '/manager' : '/client';
   const navItems = [
     { href: basePath, label: 'Home', icon: Home, exact: true },
     { href: `${basePath}/profile`, label: 'Profile & access', icon: CircleUserRound, exact: false },
-    ...(isAdmin ? [
+    ...(isOperations ? [
       { href: `${basePath}/inventory`, label: 'Inventory', icon: Package, exact: false },
       { href: `${basePath}/orders`, label: 'Orders & tracking', icon: Truck, exact: false },
-      { href: `${basePath}/users`, label: 'User management', icon: ShieldCheck, exact: false },
+      ...(isAdmin ? [{ href: `${basePath}/users`, label: 'User management', icon: ShieldCheck, exact: false }] : []),
     ] : [
       { href: `${basePath}/catalogue`, label: 'Orders / ordering', icon: ShoppingBag, exact: false },
       { href: `${basePath}/tracking`, label: 'Package tracking', icon: Truck, exact: false },
@@ -75,11 +78,11 @@ export function AppShell({ role, title, eyebrow, children }: AppShellProps) {
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-sidebar-foreground/45">workspace</p>
         <div className="mt-3 flex items-center gap-3">
           <span className="flex size-9 items-center justify-center rounded-lg bg-sidebar-accent text-accent">
-            {isAdmin ? <ShieldCheck size={17} /> : <Building2 size={17} />}
+            {isOperations ? <ShieldCheck size={17} /> : <Building2 size={17} />}
           </span>
           <div>
-            <p className="text-sm font-semibold text-sidebar-foreground">{isAdmin ? 'Admin console' : 'Client portal'}</p>
-            <p className="text-xs text-sidebar-foreground/52">{isAdmin ? 'System administration' : 'Secure account access'}</p>
+            <p className="text-sm font-semibold text-sidebar-foreground">{isAdmin ? 'Admin console' : isManager ? 'Manager workspace' : 'Partner portal'}</p>
+            <p className="text-xs text-sidebar-foreground/52">{isAdmin ? 'System administration' : isManager ? 'Order and inventory operations' : 'Secure account access'}</p>
           </div>
         </div>
       </div>
@@ -111,7 +114,7 @@ export function AppShell({ role, title, eyebrow, children }: AppShellProps) {
             </Avatar>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-sidebar-foreground" data-testid="text-sidebar-user">{label}</p>
-              <p className="truncate text-xs text-sidebar-foreground/50" data-testid="text-sidebar-role">{role} account</p>
+              <p className="truncate text-xs text-sidebar-foreground/50" data-testid="text-sidebar-role">{roleLabel}</p>
             </div>
           </div>
           <Button

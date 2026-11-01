@@ -7,6 +7,7 @@ export type Medicine = {
   stockQuantity: number;
   isAvailable: boolean;
   imageUrl: string | null;
+  expirationDate?: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 };

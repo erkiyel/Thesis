@@ -33,7 +33,7 @@ const orderStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'deliver
 
 type AdminPageView = 'home' | 'inventory' | 'orders';
 
-export function AdminDashboardPage({ view = 'home' }: { view?: AdminPageView }) {
+export function AdminDashboardPage({ view = 'home', role = 'admin' }: { view?: AdminPageView; role?: 'admin' | 'manager' }) {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [error, setError] = useState('');
@@ -60,17 +60,17 @@ export function AdminDashboardPage({ view = 'home' }: { view?: AdminPageView }) 
     return updated;
   }
 
-  if (view === 'home') return <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading forecasting dashboard…</div>}><ForecastDashboard /></Suspense>;
+  if (view === 'home') return <Suspense fallback={<div className="p-8 text-sm text-muted-foreground">Loading forecasting dashboard…</div>}><ForecastDashboard role={role} /></Suspense>;
 
   return (
-    <AppShell role="admin" title={view === 'inventory' ? 'Medicine inventory' : 'Orders & tracking'} eyebrow="Operations workspace">
+    <AppShell role={role} title={view === 'inventory' ? 'Medicine inventory' : 'Orders & tracking'} eyebrow={role === 'admin' ? 'Operations workspace' : 'Manager workspace'}>
       <div className="page-enter space-y-8">
         <div>
           <h2 className="mt-3 font-serif text-4xl font-extrabold tracking-[-0.045em]">{view === 'inventory' ? 'Manage medicine inventory.' : 'Keep every order moving.'}</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">{view === 'inventory' ? 'Add and update medicine details, prices, stock, availability, and images.' : 'Review payment records and update order status and package tracking.'}</p>
         </div>
         <ErrorNotice message={error} />
-        {view === 'inventory' && <AdminInventory medicines={medicines} loading={loading} loadError={error} onChanged={refresh} />}
+        {view === 'inventory' && <AdminInventory medicines={medicines} loading={loading} loadError={error} onChanged={refresh} readOnly={role === 'manager'} />}
         {view === 'orders' && <section className="rounded-2xl border border-border bg-card p-6 sm:p-8" id="orders">
           <div className="flex items-start gap-4"><span className="flex size-10 items-center justify-center rounded-xl bg-secondary text-primary"><Truck size={18} /></span><div><h3 className="font-serif text-2xl font-extrabold">Orders & package tracking</h3></div></div>
           {loading ? <DatabaseLoading className="mt-5" label="Loading orders" /> : error ? null : orders.length === 0 ? <p className="mt-8 rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No orders have been placed yet.</p> : (
@@ -84,7 +84,7 @@ export function AdminDashboardPage({ view = 'home' }: { view?: AdminPageView }) 
   );
 }
 
-function AdminInventory({ medicines, loading, loadError, onChanged }: { medicines: Medicine[]; loading: boolean; loadError: string; onChanged: () => Promise<void> }) {
+function AdminInventory({ medicines, loading, loadError, onChanged, readOnly = false }: { medicines: Medicine[]; loading: boolean; loadError: string; onChanged: () => Promise<void>; readOnly?: boolean }) {
   const emptyForm = { name: '', price: '', stockQuantity: '0', isAvailable: true };
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -141,8 +141,8 @@ function AdminInventory({ medicines, loading, loadError, onChanged }: { medicine
   return (
     <section className="rounded-2xl border border-border bg-card p-6 sm:p-8" id="inventory">
       <div className="flex items-start gap-4"><span className="flex size-10 items-center justify-center rounded-xl bg-secondary text-primary"><Stethoscope size={18} /></span><div><h3 className="font-serif text-2xl font-extrabold">Medicine inventory</h3></div></div>
-      <div className="mt-8 grid gap-8 xl:grid-cols-[340px_minmax(0,1fr)]">
-        <form onSubmit={submit} className="space-y-4 rounded-xl border border-border bg-secondary/30 p-5">
+      <div className={`mt-8 grid gap-8 ${readOnly ? '' : 'xl:grid-cols-[340px_minmax(0,1fr)]'}`}>
+        {!readOnly && <form onSubmit={submit} className="space-y-4 rounded-xl border border-border bg-secondary/30 p-5">
           <div className="flex items-center justify-between"><p className="font-semibold">{editingId ? 'Edit medicine' : 'Add medicine'}</p>{editingId && <Button type="button" variant="ghost" size="sm" onClick={reset}>Cancel</Button>}</div>
           <div className="space-y-2"><Label htmlFor="medicine-name">Medicine name</Label><Input id="medicine-name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Amoxicillin 500mg" /></div>
           <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="medicine-price">Price (PHP)</Label><Input id="medicine-price" required type="number" min="0" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div><div className="space-y-2"><Label htmlFor="medicine-stock">Stock</Label><Input id="medicine-stock" required type="number" min="0" step="1" value={form.stockQuantity} onChange={(e) => setForm({ ...form, stockQuantity: e.target.value })} /></div></div>
@@ -150,12 +150,12 @@ function AdminInventory({ medicines, loading, loadError, onChanged }: { medicine
           <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground"><ImagePlus size={16} />{image ? image.name : 'Upload product image'}<input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => setImage(e.target.files?.[0] ?? null)} /></label>
           {loadError && <ErrorNotice message={loadError} />}{error && <ErrorNotice message={error} />}{message && <p className="rounded-lg bg-emerald-600/10 px-3 py-2 text-sm text-emerald-700">{message}</p>}
           <Button type="submit" disabled={saving} className="w-full">{saving ? 'Saving…' : editingId ? 'Save changes' : 'Add medicine'} <Plus size={16} /></Button>
-        </form>
+        </form>}
         <div className="overflow-x-auto">
-          {loading ? <DatabaseLoading label="Loading inventory" /> : loadError ? null : medicines.length === 0 ? <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No medicines have been added.</div> : <table className="w-full min-w-[620px] text-left text-sm"><thead><tr className="border-b border-border font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"><th className="pb-3 pr-3">Medicine</th><th className="pb-3 pr-3">Price</th><th className="pb-3 pr-3">Stock</th><th className="pb-3 pr-3">Availability</th><th /></tr></thead><tbody>{medicines.map((medicine) => <tr key={medicine.id} className="border-b border-border/70 last:border-0"><td className="py-4 pr-3 font-semibold">{medicine.name}</td><td className="py-4 pr-3">{formatCurrency(medicine.price)}</td><td className="py-4 pr-3">{medicine.stockQuantity}</td><td className="py-4 pr-3"><StatusPill value={medicine.isAvailable && medicine.stockQuantity > 0 ? 'available' : 'unavailable'} /></td><td className="py-4 text-right"><Button variant="ghost" size="sm" onClick={() => edit(medicine)}><Pencil size={15} /> Edit</Button><Button variant="ghost" size="sm" disabled={deletingId === medicine.id} onClick={() => setDeleteTarget(medicine)}><Trash2 size={15} /> {deletingId === medicine.id ? 'Deleting…' : 'Delete'}</Button></td></tr>)}</tbody></table>}
+          {loading ? <DatabaseLoading label="Loading inventory" /> : loadError ? null : medicines.length === 0 ? <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No medicines have been added.</div> : <table className="w-full min-w-[620px] text-left text-sm"><thead><tr className="border-b border-border font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"><th className="pb-3 pr-3">Medicine</th><th className="pb-3 pr-3">Price</th><th className="pb-3 pr-3">Stock</th><th className="pb-3 pr-3">Availability</th>{readOnly && <th className="pb-3 pr-3">Expiration</th>}<th /></tr></thead><tbody>{medicines.map((medicine) => <tr key={medicine.id} className="border-b border-border/70 last:border-0"><td className="py-4 pr-3 font-semibold">{medicine.name}</td><td className="py-4 pr-3">{formatCurrency(medicine.price)}</td><td className="py-4 pr-3">{medicine.stockQuantity}</td><td className="py-4 pr-3"><StatusPill value={medicine.isAvailable && medicine.stockQuantity > 0 ? 'available' : 'unavailable'} /></td>{readOnly && <td className="py-4 pr-3">{medicine.expirationDate ? formatDate(medicine.expirationDate) : 'Not recorded'}</td>}<td className="py-4 text-right">{!readOnly && <><Button variant="ghost" size="sm" onClick={() => edit(medicine)}><Pencil size={15} /> Edit</Button><Button variant="ghost" size="sm" disabled={deletingId === medicine.id} onClick={() => setDeleteTarget(medicine)}><Trash2 size={15} /> {deletingId === medicine.id ? 'Deleting…' : 'Delete'}</Button></>}</td></tr>)}</tbody></table>}
         </div>
       </div>
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open && deletingId === null) setDeleteTarget(null); }}>
+      {!readOnly && <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open && deletingId === null) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {deleteTarget?.name}?</AlertDialogTitle>
@@ -167,7 +167,7 @@ function AdminInventory({ medicines, loading, loadError, onChanged }: { medicine
             <AlertDialogAction disabled={deletingId !== null} onClick={(event) => { event.preventDefault(); void deleteMedicine(); }}>{deletingId ? 'Deleting…' : 'Delete medicine'}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog>}
     </section>
   );
 }

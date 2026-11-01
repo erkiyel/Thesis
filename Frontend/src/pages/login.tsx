@@ -5,17 +5,28 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/use-auth';
-import { getRole, isSupabaseConfigured } from '@/lib/supabase';
+import { getRole, isSupabaseConfigured, resendSignupConfirmation } from '@/lib/supabase';
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { session, isLoading, login } = useAuth();
+  const { session, isLoading, login, logout } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [resetMessage, setResetMessage] = useState('');
+  const [requiresConfirmation, setRequiresConfirmation] = useState(false);
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
+  const [resendError, setResendError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setTimeout(() => setResendCooldown((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendCooldown]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -34,21 +45,62 @@ export default function Login() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+    setRequiresConfirmation(false);
+    setResendMessage('');
+    setResendError('');
     setIsSubmitting(true);
     try {
       const next = await login(email.trim(), password);
       const role = getRole(next.user);
       if (!role) {
-        setError('Your account is authenticated, but no admin or client role is assigned. Contact your system administrator.');
+        const approvalStatus = next.user.profile?.approval_status;
+        if (approvalStatus === 'pending' || approvalStatus === 'rejected') await logout();
+        setError(approvalStatus === 'pending'
+          ? 'Your email is confirmed, but your account is still pending administrator approval. You can sign in after an administrator approves it and assigns your workspace.'
+          : approvalStatus === 'rejected'
+            ? 'This registration was not approved. Contact the system administrator for help.'
+            : 'Your account is authenticated, but no workspace role is assigned. Contact your system administrator.');
         return;
       }
       setLocation(`/${role}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Sign in failed. Please try again.');
+      const authError = caught as (Error & { code?: string });
+      const message = authError instanceof Error ? authError.message : 'Sign in failed. Please try again.';
+      const unconfirmed = authError.code === 'email_not_confirmed' || /email not confirmed|confirm your email|email.*not verified/i.test(message);
+      setRequiresConfirmation(unconfirmed);
+      setError(unconfirmed
+        ? 'Your email address has not been confirmed. Confirm it before signing in, then wait for administrator approval.'
+        : message);
     } finally {
       setIsSubmitting(false);
     }
   }
+
+  async function handleResendConfirmation() {
+    setResendError('');
+    setResendMessage('');
+    if (resendCooldown > 0) return;
+    setResendBusy(true);
+    try {
+      await resendSignupConfirmation(email);
+      setResendMessage('If this address belongs to an unconfirmed account, a confirmation email has been sent. Check your inbox and spam folder.');
+      const until = Date.now() + 60_000;
+      try { window.sessionStorage.setItem(`oncophil-confirm-resend:${email.trim().toLowerCase()}`, String(until)); } catch {}
+      setResendCooldown(60);
+    } catch (cause) {
+      setResendError(cause instanceof Error ? cause.message : 'Unable to resend the confirmation email. Please try again later.');
+    } finally {
+      setResendBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!requiresConfirmation) return;
+    try {
+      const until = Number(window.sessionStorage.getItem(`oncophil-confirm-resend:${email.trim().toLowerCase()}`) ?? 0);
+      setResendCooldown(Math.max(0, Math.ceil((until - Date.now()) / 1000)));
+    } catch { setResendCooldown(0); }
+  }, [email, requiresConfirmation]);
 
   return (
     <main className="min-h-[100dvh] bg-background">
@@ -115,6 +167,15 @@ export default function Login() {
               {error && (
                 <div className="rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm leading-5 text-destructive" role="alert" data-testid="status-login-error">{error}</div>
               )}
+              {requiresConfirmation && (
+                <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4">
+                  <Button type="button" variant="outline" disabled={resendBusy || resendCooldown > 0 || !email.trim()} onClick={() => void handleResendConfirmation()} className="w-full" data-testid="button-resend-confirmation">
+                    {resendBusy ? 'Sending confirmation email…' : resendCooldown > 0 ? `Resend available in ${resendCooldown}s` : 'Resend confirmation email'}
+                  </Button>
+                  {resendMessage && <p className="text-sm leading-5 text-emerald-800" role="status">{resendMessage}</p>}
+                  {resendError && <p className="text-sm leading-5 text-destructive" role="alert">{resendError}</p>}
+                </div>
+              )}
               {!isSupabaseConfigured() && (
                 <div className="rounded-lg border border-accent/40 bg-accent/10 px-4 py-3 text-xs leading-5 text-foreground" role="status" data-testid="status-config-warning">
                   Authentication is not configured in this environment. Add the Supabase project URL and publishable key before signing in.
@@ -124,6 +185,7 @@ export default function Login() {
                 {isSubmitting ? 'Checking secure access…' : 'Continue to workspace'} <ArrowRight size={16} />
               </Button>
             </form>
+            <p className="mt-6 text-center text-sm text-muted-foreground">Need an account? <Link href="/register" className="font-semibold text-primary underline-offset-4 hover:underline">Register</Link></p>
           </div>
 
           <footer className="flex items-center justify-between gap-4 border-t border-border/70 pt-5 font-mono text-[10px] uppercase tracking-[0.13em] text-muted-foreground">

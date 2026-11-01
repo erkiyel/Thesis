@@ -10,6 +10,7 @@ import type { UserRole } from '@/lib/supabase';
 import { apiRequest } from '@/lib/api';
 
 type ClientAccount = { id: string; fullName: string; email: string; role: string; status: string };
+type PendingAccount = { id: string; fullName: string; email: string; organizationName: string | null; approvalStatus: 'pending' };
 
 function errorMessage(error: unknown) {
   if (error && typeof error === 'object' && 'data' in error) {
@@ -31,6 +32,7 @@ function statusLabel(status: string) {
 export default function UserManagement() {
   const queryClient = useQueryClient();
   const clients = useQuery({ queryKey: ['admin-clients'], queryFn: () => apiRequest<ClientAccount[]>('/admin/clients') });
+  const pending = useQuery({ queryKey: ['admin-approvals'], queryFn: () => apiRequest<PendingAccount[]>('/admin/approvals') });
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [initialPassword, setInitialPassword] = useState('');
@@ -51,6 +53,17 @@ export default function UserManagement() {
     },
   });
 
+  const reviewRegistration = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'approve_manager' | 'approve_partnership' | 'reject' }) =>
+      apiRequest(`/admin/approvals/${encodeURIComponent(id)}`, { method: 'POST', body: JSON.stringify({ action }) }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['admin-approvals'] }),
+        queryClient.invalidateQueries({ queryKey: ['admin-clients'] }),
+      ]);
+    },
+  });
+
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormMessage('');
@@ -62,18 +75,25 @@ export default function UserManagement() {
       <div className="page-enter">
         <div className="mb-8">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">Account administration</p>
-          <h2 className="mt-3 font-serif text-4xl font-extrabold tracking-[-0.045em]">Create client access.</h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Create client accounts from the protected admin workspace. New accounts are always assigned the client role; this feature cannot create administrators.
-          </p>
+          <h2 className="mt-3 font-serif text-4xl font-extrabold tracking-[-0.045em]">Manage account access.</h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">Review public registration requests and manage existing Partnership Account access. Administrators cannot be created through this form.</p>
         </div>
+
+        <section className="mb-6 rounded-2xl border border-border bg-card p-6 sm:p-8">
+          <div className="flex items-start justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">Account approval</p><h3 className="mt-2 font-serif text-2xl font-extrabold">Pending Approvals</h3></div>{!pending.isLoading && pending.data && <span className="rounded-full bg-secondary px-2.5 py-1 font-mono text-[10px] text-muted-foreground">{pending.data.length} pending</span>}</div>
+          {pending.isLoading && <DatabaseLoading className="mt-3" label="Loading pending registrations" />}
+          {pending.isError && <div className="mt-5 rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm text-destructive" role="alert">{errorMessage(pending.error)}</div>}
+          {!pending.isLoading && !pending.isError && pending.data?.length === 0 && <p className="mt-5 rounded-lg border border-dashed border-border px-4 py-7 text-center text-sm text-muted-foreground">There are no registrations awaiting review.</p>}
+          {!!pending.data?.length && <div className="mt-5 space-y-3">{pending.data.map((account) => <article key={account.id} className="flex flex-col gap-4 rounded-xl border border-border p-4 lg:flex-row lg:items-center lg:justify-between"><div><p className="font-semibold">{account.fullName}</p><p className="mt-1 text-sm text-muted-foreground">{account.email}{account.organizationName ? ` · ${account.organizationName}` : ''}</p></div><div className="flex flex-wrap gap-2"><Button size="sm" disabled={reviewRegistration.isPending} onClick={() => reviewRegistration.mutate({ id: account.id, action: 'approve_manager' })}>Approve as Manager</Button><Button variant="outline" size="sm" disabled={reviewRegistration.isPending} onClick={() => reviewRegistration.mutate({ id: account.id, action: 'approve_partnership' })}>Approve as Partnership Account</Button><Button variant="destructive" size="sm" disabled={reviewRegistration.isPending} onClick={() => reviewRegistration.mutate({ id: account.id, action: 'reject' })}>Reject Registration</Button></div></article>)}</div>}
+          {reviewRegistration.isError && <p className="mt-4 text-sm text-destructive" role="alert">{errorMessage(reviewRegistration.error)}</p>}
+        </section>
 
         <div className="grid gap-6 xl:grid-cols-[minmax(320px,0.75fr)_minmax(0,1.25fr)]">
           <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
             <div className="flex items-start gap-4">
               <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary"><UserPlus size={18} /></span>
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">New client</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">New Partnership Account</p>
                 <h3 className="mt-2 font-serif text-2xl font-extrabold tracking-tight">Account details</h3>
               </div>
             </div>
@@ -97,7 +117,7 @@ export default function UserManagement() {
                 </div>
               )}
               <Button type="submit" disabled={createClient.isPending} className="h-11 w-full text-sm font-semibold" data-testid="button-create-client">
-                {createClient.isPending ? 'Creating secure account…' : 'Create client account'} <UserPlus size={16} />
+                {createClient.isPending ? 'Creating secure account…' : 'Create Partnership Account'} <UserPlus size={16} />
               </Button>
             </form>
           </section>
@@ -108,7 +128,7 @@ export default function UserManagement() {
                 <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary"><UsersRound size={18} /></span>
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Existing accounts</p>
-                  <h3 className="mt-2 font-serif text-2xl font-extrabold tracking-tight">Client directory</h3>
+                  <h3 className="mt-2 font-serif text-2xl font-extrabold tracking-tight">Account directory</h3>
                 </div>
               </div>
               {!clients.isLoading && clients.data && <span className="rounded-full bg-secondary px-2.5 py-1 font-mono text-[10px] text-muted-foreground">{clients.data.length} clients</span>}

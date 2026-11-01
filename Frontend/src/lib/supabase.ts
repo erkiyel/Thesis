@@ -4,13 +4,15 @@ import {
   type User,
 } from '@supabase/supabase-js';
 
-export type UserRole = 'admin' | 'client';
+export type UserRole = 'admin' | 'manager' | 'client' | 'partnership_account';
 
 export interface Profile {
   id: string;
   full_name: string;
   avatar_url: string;
   role: UserRole;
+  approval_status: 'pending' | 'approved' | 'rejected';
+  organization_name: string | null;
 }
 
 export type AuthUser = User & {
@@ -52,12 +54,30 @@ export function isSupabaseConfigured() {
   return supabase !== null;
 }
 
+export function emailConfirmationRedirect() {
+  return new URL(`${import.meta.env.BASE_URL}auth/callback`, window.location.origin).toString();
+}
+
+export async function resendSignupConfirmation(email: string) {
+  const client = requireSupabase();
+  const normalizedEmail = email.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+    throw new Error('Enter a valid email address before requesting a confirmation email.');
+  }
+  const { error } = await client.auth.resend({
+    type: 'signup',
+    email: normalizedEmail,
+    options: { emailRedirectTo: emailConfirmationRedirect() },
+  });
+  if (error) throw new Error(error.message);
+}
+
 async function loadProfile(userId: string): Promise<Profile | null> {
   if (!supabase) return null;
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, avatar_url, role')
+    .select('id, full_name, avatar_url, role, approval_status, organization_name')
     .eq('id', userId)
     .maybeSingle();
 
@@ -85,8 +105,10 @@ export async function resolveSession(
 }
 
 export function getRole(user: AuthUser | null): UserRole | null {
+  if (user?.profile?.approval_status && user.profile.approval_status !== 'approved') return null;
   const role = user?.profile?.role;
-  return role === 'admin' || role === 'client' ? role : null;
+  if (role === 'client' || role === 'partnership_account') return 'client';
+  return role === 'admin' || role === 'manager' ? role : null;
 }
 
 export function getUserLabel(user: AuthUser | null) {
@@ -156,9 +178,10 @@ export async function signIn(
   });
 
   if (error) {
-    throw new Error(
-      error.message || 'Sign in failed. Check your credentials.',
-    );
+    const authError = new Error(error.message || 'Sign in failed. Check your credentials.') as Error & { code?: string; status?: number };
+    authError.code = error.code;
+    authError.status = error.status;
+    throw authError;
   }
 
   if (!data.session) {

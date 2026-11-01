@@ -169,10 +169,17 @@ function currentUser(): array {
     [$response, $status] = httpRequest($base . '/auth/v1/user', 'GET', ["apikey: {$key}", "Authorization: Bearer {$token}", 'Accept: application/json'], null, 15);
     $user = readPayload($response);
     if ($status < 200 || $status >= 300 || !is_array($user) || empty($user['id'])) throw new ApiException(401, 'Your session is invalid or expired.');
+    if (empty($user['email_confirmed_at'])) throw new ApiException(403, 'Please confirm your email address before signing in.');
 
-    $profiles = supabaseRequest('/rest/v1/profiles?select=id,full_name,avatar_url,role&id=eq.' . rawurlencode((string)$user['id']));
+    $profiles = supabaseRequest('/rest/v1/profiles?select=id,full_name,avatar_url,role,approval_status,organization_name&id=eq.' . rawurlencode((string)$user['id']));
     $profile = is_array($profiles) ? ($profiles[0] ?? null) : null;
-    if (!$profile || !in_array($profile['role'] ?? '', ['admin', 'client'], true)) throw new ApiException(403, 'A valid Oncophil role is required.');
+    if (!$profile) throw new ApiException(403, 'A valid Oncophil role is required.');
+    $approvalStatus = (string)($profile['approval_status'] ?? 'approved');
+    if ($approvalStatus !== 'approved') {
+        $message = $approvalStatus === 'rejected' ? 'This registration was not approved. Contact the system administrator for help.' : 'Your account is pending administrator approval.';
+        throw new ApiException(403, $message);
+    }
+    if (!in_array($profile['role'] ?? '', ['admin', 'client', 'manager', 'partnership_account'], true)) throw new ApiException(403, 'A valid Oncophil role is required.');
     return ['id' => (string)$user['id'], 'email' => $user['email'] ?? '', 'profile' => $profile, 'role' => $profile['role']];
 }
 
@@ -180,6 +187,80 @@ function requireAdmin(): array {
     $user = currentUser();
     if ($user['role'] !== 'admin') throw new ApiException(403, 'Administrator access required.');
     return $user;
+}
+
+function requireManagerOrAdmin(): array {
+    $user = currentUser();
+    if (!in_array($user['role'], ['admin', 'manager'], true)) throw new ApiException(403, 'Manager or Administrator access required.');
+    return $user;
+}
+
+function textLength(string $value): int {
+    if (function_exists('mb_strlen')) return mb_strlen($value, 'UTF-8');
+    $count = preg_match_all('/./us', $value, $matches);
+    return $count === false ? strlen($value) : $count;
+}
+
+function validateAccountInput(array $input, bool $includePassword): array {
+    $fullName = trim((string)preg_replace('/[\x00-\x1F\x7F]/u', '', (string)($input['fullName'] ?? '')));
+    $email = strtolower(trim((string)($input['email'] ?? '')));
+    $organization = trim((string)preg_replace('/[\x00-\x1F\x7F]/u', '', (string)($input['organizationName'] ?? '')));
+    if ($fullName === '' || textLength($fullName) > 120) fail(400, 'Enter a full name up to 120 characters.');
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 254) fail(400, 'Enter a valid email address.');
+    if (textLength($organization) > 160) fail(400, 'Organization name must be 160 characters or fewer.');
+    $result = ['fullName' => $fullName, 'email' => $email, 'organizationName' => $organization !== '' ? $organization : null];
+    if ($includePassword) {
+        $password = (string)($input['password'] ?? '');
+        if (textLength($password) < 8 || textLength($password) > 128) fail(400, 'Password must be between 8 and 128 characters.');
+        $result['password'] = $password;
+    }
+    return $result;
+}
+
+function createPendingRegistration(array $input): array {
+    $account = validateAccountInput($input, true);
+    $redirectTo = trim((string)($input['emailRedirectTo'] ?? ''));
+    $redirect = parse_url($redirectTo);
+    if (!is_array($redirect) || !in_array(strtolower((string)($redirect['scheme'] ?? '')), ['http', 'https'], true)
+        || empty($redirect['host']) || ($redirect['path'] ?? '') !== '/auth/callback'
+        || isset($redirect['user']) || isset($redirect['pass']) || isset($redirect['query']) || isset($redirect['fragment'])) {
+        fail(400, 'A valid email confirmation redirect is required.');
+    }
+    try {
+        $auth = supabaseRequest('/auth/v1/signup?redirect_to=' . rawurlencode($redirectTo), 'POST', [
+            'email' => $account['email'],
+            'password' => $account['password'],
+            'data' => ['full_name' => $account['fullName']],
+        ], [], false);
+    } catch (ApiException $error) {
+        if ($error->status === 422 || preg_match('/already|exist|registered/i', $error->getMessage())) fail(409, 'An account with that email already exists.');
+        throw $error;
+    }
+    $authUser = is_array($auth) && isset($auth['user']) && is_array($auth['user']) ? $auth['user'] : $auth;
+    if (!is_array($authUser) || empty($authUser['id'])) throw new ApiException(502, 'Supabase did not return the registered account.');
+    if (isset($authUser['identities']) && is_array($authUser['identities']) && count($authUser['identities']) === 0) {
+        fail(409, 'An account with that email already exists.');
+    }
+    if (!empty($auth['session'])) {
+        // A session means email confirmation is disabled in Supabase Auth. Do not
+        // accept this registration as verified; remove the new Auth user instead.
+        try { supabaseRequest('/auth/v1/admin/users/' . rawurlencode((string)$authUser['id']), 'DELETE'); } catch (Throwable) {}
+        throw new ApiException(503, 'Email confirmation is not enabled for this Supabase project. Please contact the system administrator.');
+    }
+    try {
+        $profile = insertTable('profiles', [
+            'id' => $authUser['id'],
+            'full_name' => $account['fullName'],
+            'avatar_url' => '',
+            'role' => 'client',
+            'approval_status' => 'pending',
+            'organization_name' => $account['organizationName'],
+        ]);
+    } catch (Throwable $error) {
+        try { supabaseRequest('/auth/v1/admin/users/' . rawurlencode((string)$authUser['id']), 'DELETE'); } catch (Throwable) {}
+        throw $error;
+    }
+    return ['id' => (string)$authUser['id'], 'fullName' => $profile['full_name'], 'approvalStatus' => 'pending'];
 }
 
 function selectTable(string $table, string $select = '*', string $query = ''): array {
@@ -216,6 +297,7 @@ function medicineOutput(array $row): array {
         'stockQuantity' => (int)($row['stock_quantity'] ?? $row['stock'] ?? $row['quantity'] ?? 0),
         'isAvailable' => (bool)($row['is_available'] ?? $row['available'] ?? true),
         'imageUrl' => $row['image_url'] ?? null,
+        'expirationDate' => $row['expiration_date'] ?? null,
         'createdAt' => $row['created_at'] ?? null,
         'updatedAt' => $row['updated_at'] ?? null,
     ];
@@ -429,11 +511,46 @@ function createClientAccount(array $input): array {
 
 function route(string $method, string $path): void {
     if ($path === '/healthz' && $method === 'GET') respond(['status' => 'ok']);
+    if ($path === '/register' && $method === 'POST') {
+        $input = jsonBody();
+        respond(createPendingRegistration($input), 201);
+    }
     $user = currentUser();
+
+    if ($path === '/admin/approvals' && $method === 'GET') {
+        requireAdmin();
+        $profiles = selectTable('profiles', 'id,full_name,role,approval_status,organization_name', 'approval_status=eq.pending');
+        $auth = supabaseRequest('/auth/v1/admin/users?page=1&per_page=1000');
+        $users = is_array($auth) && isset($auth['users']) ? $auth['users'] : (is_array($auth) ? $auth : []);
+        $byId = [];
+        foreach ($users as $account) $byId[(string)($account['id'] ?? '')] = $account;
+        $output = [];
+        foreach ($profiles as $profile) {
+            $account = $byId[(string)$profile['id']] ?? [];
+            $output[] = ['id' => (string)$profile['id'], 'fullName' => (string)$profile['full_name'], 'email' => (string)($account['email'] ?? ''), 'organizationName' => $profile['organization_name'] ?? null, 'approvalStatus' => 'pending'];
+        }
+        respond($output);
+    }
+    if (preg_match('#^/admin/approvals/([^/]+)$#', $path, $match) && $method === 'POST') {
+        requireAdmin();
+        $input = jsonBody();
+        $action = (string)($input['action'] ?? '');
+        $profile = oneTable('profiles', 'id=eq.' . rawurlencode($match[1]) . '&approval_status=eq.pending');
+        if (!$profile) fail(404, 'Pending registration not found.');
+        if ($action === 'approve_manager') {
+            $updated = updateTable('profiles', 'id=eq.' . rawurlencode($match[1]) . '&approval_status=eq.pending', ['role' => 'manager', 'approval_status' => 'approved']);
+        } elseif ($action === 'approve_partnership') {
+            // `client` is the established partnership role used by existing rows and policies.
+            $updated = updateTable('profiles', 'id=eq.' . rawurlencode($match[1]) . '&approval_status=eq.pending', ['role' => 'client', 'approval_status' => 'approved']);
+        } elseif ($action === 'reject') {
+            $updated = updateTable('profiles', 'id=eq.' . rawurlencode($match[1]) . '&approval_status=eq.pending', ['approval_status' => 'rejected']);
+        } else fail(400, 'Choose a valid approval action.');
+        respond(['id' => (string)$updated['id'], 'role' => (string)$updated['role'], 'approvalStatus' => (string)$updated['approval_status']]);
+    }
 
     if ($path === '/admin/clients' && $method === 'GET') {
         requireAdmin();
-        $profiles = selectTable('profiles', 'id,full_name,avatar_url,role', 'role=eq.client');
+        $profiles = selectTable('profiles', 'id,full_name,avatar_url,role,approval_status,organization_name', 'role=in.(client,partnership_account,manager)&approval_status=eq.approved');
         $auth = supabaseRequest('/auth/v1/admin/users?page=1&per_page=1000');
         $users = is_array($auth) && isset($auth['users']) ? $auth['users'] : (is_array($auth) ? $auth : []);
         $byId = [];
@@ -443,7 +560,9 @@ function route(string $method, string $path): void {
             $account = $byId[(string)$profile['id']] ?? [];
             if (!isset($account['email'])) continue;
             $status = (!empty($account['deleted_at']) || !empty($account['banned_until'])) ? 'disabled' : (empty($account['email_confirmed_at']) ? 'unconfirmed' : 'active');
-            $output[] = ['id' => (string)$profile['id'], 'fullName' => $profile['full_name'], 'email' => $account['email'], 'role' => 'client', 'status' => $status];
+            $storedRole = (string)$profile['role'];
+            $displayRole = $storedRole === 'manager' ? 'Manager' : 'Partnership Account';
+            $output[] = ['id' => (string)$profile['id'], 'fullName' => $profile['full_name'], 'email' => $account['email'], 'role' => $displayRole, 'status' => $status, 'approvalStatus' => 'approved', 'organizationName' => $profile['organization_name'] ?? null];
         }
         respond($output);
     }
@@ -458,7 +577,7 @@ function route(string $method, string $path): void {
     }
 
     if ($path === '/medicines' && $method === 'GET') {
-        $rows = selectTable('medicines', '*', $user['role'] === 'admin' ? '' : 'is_available=eq.true&stock_quantity=gt.0&order=name.asc');
+        $rows = selectTable('medicines', '*', in_array($user['role'], ['admin', 'manager'], true) ? '' : 'is_available=eq.true&stock_quantity=gt.0&order=name.asc');
         respond(array_map('medicineOutput', $rows));
     }
     if ($path === '/profile/avatar' && $method === 'POST') {
@@ -538,12 +657,12 @@ function route(string $method, string $path): void {
     }
 
     if ($path === '/orders' && $method === 'GET') {
-        $query = $user['role'] === 'admin' ? 'order=created_at.desc' : 'client_id=eq.' . rawurlencode($user['id']) . '&order=created_at.desc';
+        $query = in_array($user['role'], ['admin', 'manager'], true) ? 'order=created_at.desc' : 'client_id=eq.' . rawurlencode($user['id']) . '&order=created_at.desc';
         $orders = selectTable('orders', '*', $query);
         respond(array_map('loadOrderDetails', $orders));
     }
     if ($path === '/orders' && $method === 'POST') {
-        if ($user['role'] !== 'client') fail(403, 'Only client accounts can place orders.');
+        if (!in_array($user['role'], ['client', 'partnership_account'], true)) fail(403, 'Only Partnership Accounts can place orders.');
         $input = jsonBody();
         $items = is_array($input['items'] ?? null) ? $input['items'] : [];
         $paymentMethod = strtolower((string)($input['paymentMethod'] ?? ''));
@@ -568,11 +687,11 @@ function route(string $method, string $path): void {
     }
     if (preg_match('#^/orders/([^/]+)/tracking$#', $path, $match) && $method === 'GET') {
         $order = oneTable('orders', 'id=eq.' . rawurlencode($match[1]));
-        if (!$order || ($user['role'] !== 'admin' && (string)($order['client_id'] ?? $order['user_id'] ?? '') !== $user['id'])) fail(404, 'Order not found.');
+        if (!$order || (!in_array($user['role'], ['admin', 'manager'], true) && (string)($order['client_id'] ?? $order['user_id'] ?? '') !== $user['id'])) fail(404, 'Order not found.');
         respond(loadOrderDetails($order));
     }
     if (preg_match('#^/admin/orders/([^/]+)$#', $path, $match) && in_array($method, ['PATCH', 'PUT'], true)) {
-        requireAdmin();
+        requireManagerOrAdmin();
         $input = jsonBody();
         $order = oneTable('orders', 'id=eq.' . rawurlencode($match[1]));
         if (!$order) fail(404, 'Order not found.');
@@ -600,7 +719,7 @@ function route(string $method, string $path): void {
         respond(loadOrderDetails($updated));
     }
     if ($path === '/admin/forecasts/preview' && $method === 'POST') {
-        requireAdmin();
+        requireManagerOrAdmin();
         $file = $_FILES['file'] ?? null;
         if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'] ?? '')) fail(400, 'Choose an Excel workbook to preview.');
         $extension = strtolower(pathinfo((string)($file['name'] ?? ''), PATHINFO_EXTENSION));
@@ -622,7 +741,7 @@ function route(string $method, string $path): void {
         respond(['valid' => $importId !== null, 'importId' => $importId, ...$preview]);
     }
     if ($path === '/admin/forecasts/run' && $method === 'POST') {
-        $admin = requireAdmin();
+        $admin = requireManagerOrAdmin();
         $input = jsonBody();
         $horizon = (int)($input['horizon'] ?? 3);
         if ($horizon < 1 || $horizon > 12) fail(400, 'Forecast horizon must be between 1 and 12 months.');
@@ -671,7 +790,7 @@ function route(string $method, string $path): void {
         respond($result, 201);
     }
     if ($path === '/admin/forecasts' && $method === 'GET') {
-        requireAdmin();
+        requireManagerOrAdmin();
         $runs = selectAllRows('forecast_runs', '*', 'order=created_at.desc');
         if (!$runs) respond(['runs' => []]);
         $runIds = array_map(static fn(array $row): string => rawurlencode((string)$row['id']), $runs);
@@ -702,7 +821,7 @@ function route(string $method, string $path): void {
         respond(['runs' => $output]);
     }
     if ($path === '/admin/forecasts/imports' && $method === 'GET') {
-        requireAdmin();
+        requireManagerOrAdmin();
         $directory = forecastRuntimeDirectory() . DIRECTORY_SEPARATOR . 'imports';
         $imports = [];
         foreach (glob($directory . DIRECTORY_SEPARATOR . '*.json') ?: [] as $importPath) {
@@ -716,7 +835,7 @@ function route(string $method, string $path): void {
         respond(['imports' => $imports]);
     }
     if ($path === '/admin/dashboard' && $method === 'GET') {
-        requireAdmin();
+        requireManagerOrAdmin();
         $medicines = selectTable('medicines', 'id,stock_quantity,is_available');
         $orders = selectTable('orders', 'id,order_status,total_amount,created_at');
         respond([

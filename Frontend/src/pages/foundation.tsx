@@ -351,7 +351,7 @@ export function ProfilePage({ role }: { role: UserRole }) {
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-600/20 bg-emerald-600/5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-emerald-700"><ShieldCheck size={13} /> verified</span>
           </div>
           <dl className="py-7">
-            <div><dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Workspace role</dt><dd className="mt-2 text-sm font-semibold capitalize" data-testid="text-profile-role">{role}</dd></div>
+            <div><dt className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Workspace role</dt><dd className="mt-2 text-sm font-semibold" data-testid="text-profile-role">{role === 'client' ? 'Partnership Account' : role === 'admin' ? 'Administrator' : 'Manager'}</dd></div>
           </dl>
         </section>
         <section className="max-w-3xl rounded-2xl border border-border bg-card p-6 sm:p-8">

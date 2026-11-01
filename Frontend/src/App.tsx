@@ -5,8 +5,10 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import Login from '@/pages/login';
+import Register from '@/pages/register';
 import ForgotPassword from '@/pages/forgot-password';
 import ResetPassword from '@/pages/reset-password';
+import AuthConfirmation from '@/pages/auth-confirmation';
 import { FoundationHome, ProfilePage } from '@/pages/foundation';
 import UserManagement from '@/pages/user-management';
 import { AdminDashboardPage, ClientCataloguePage } from '@/pages/operations';
@@ -44,7 +46,11 @@ function AccessBoundary() {
         <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">Access boundary</p>
         <h1 className="mt-3 font-serif text-3xl font-extrabold tracking-tight">Role assignment required</h1>
         <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">
-          This account is authenticated, but it is not assigned an admin or client role. Ask your system administrator to update your Supabase account metadata.
+          {user?.profile?.approval_status === 'pending'
+            ? 'Your account is pending approval. An administrator must review your registration before you can access the system.'
+            : user?.profile?.approval_status === 'rejected'
+              ? 'This registration was not approved. Contact the system administrator for help.'
+              : 'This account is not assigned an active workspace role. Ask your system administrator for help.'}
         </p>
         <p className="mt-4 break-all font-mono text-[10px] text-muted-foreground" data-testid="text-unassigned-user">{user?.email ?? user?.id}</p>
         <button onClick={() => void logout()} className="mt-7 inline-flex h-10 items-center justify-center rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground" data-testid="button-boundary-logout">Sign out</button>
@@ -53,7 +59,7 @@ function AccessBoundary() {
   );
 }
 
-function Protected({ role, children }: { role: 'admin' | 'client'; children: ReactNode }) {
+function Protected({ role, children }: { role: 'admin' | 'manager' | 'client'; children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
@@ -90,8 +96,10 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/login" component={Login} />
+        <Route path="/register" component={Register} />
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/auth/callback" component={AuthConfirmation} />
         <Route path="/admin">
           <Protected role="admin"><AdminDashboardPage view="home" /></Protected>
         </Route>
@@ -106,6 +114,18 @@ function Router() {
         </Route>
         <Route path="/admin/inventory">
           <Protected role="admin"><AdminDashboardPage view="inventory" /></Protected>
+        </Route>
+        <Route path="/manager">
+          <Protected role="manager"><AdminDashboardPage view="home" role="manager" /></Protected>
+        </Route>
+        <Route path="/manager/profile">
+          <Protected role="manager"><ProfilePage role="manager" /></Protected>
+        </Route>
+        <Route path="/manager/inventory">
+          <Protected role="manager"><AdminDashboardPage view="inventory" role="manager" /></Protected>
+        </Route>
+        <Route path="/manager/orders">
+          <Protected role="manager"><AdminDashboardPage view="orders" role="manager" /></Protected>
         </Route>
         <Route path="/client">
           <Protected role="client"><ClientCataloguePage view="home" /></Protected>
