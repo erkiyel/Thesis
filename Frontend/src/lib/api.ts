@@ -1,5 +1,10 @@
 import { supabase } from '@/lib/supabase';
 
+const configuredApiBaseUrl = String(import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
+const apiRoot = configuredApiBaseUrl
+  ? `${configuredApiBaseUrl.endsWith('/api') ? configuredApiBaseUrl : `${configuredApiBaseUrl}/api`}`
+  : '/api';
+
 export type Medicine = {
   id: string;
   name: string;
@@ -63,7 +68,8 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   headers.set('Accept', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
   if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
-  const response = await fetch(`/api${path}`, { ...init, headers });
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const response = await fetch(`${apiRoot}${normalizedPath}`, { ...init, headers });
   const text = await response.text();
   let payload: unknown = null;
   try {

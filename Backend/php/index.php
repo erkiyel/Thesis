@@ -10,9 +10,6 @@ declare(strict_types=1);
  */
 
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Authorization, Content-Type');
-header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS');
 
 // Load local server settings for PHP's built-in development server. Hosting
 // providers should continue to supply these values as environment variables.
@@ -31,7 +28,24 @@ if (is_file($localEnv) && is_readable($localEnv)) {
     }
 }
 
+$configuredOrigins = getenv('ONCOPHIL_ALLOWED_ORIGINS');
+$allowedOrigins = $configuredOrigins === false || trim($configuredOrigins) === ''
+    ? ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174']
+    : array_values(array_filter(array_map(static fn(string $origin): string => rtrim(trim($origin), '/'), explode(',', $configuredOrigins))));
+$requestOrigin = rtrim(trim((string)($_SERVER['HTTP_ORIGIN'] ?? '')), '/');
+$originAllowed = $requestOrigin !== '' && in_array($requestOrigin, $allowedOrigins, true);
+if ($originAllowed) {
+    header('Access-Control-Allow-Origin: ' . $requestOrigin);
+    header('Vary: Origin');
+}
+header('Access-Control-Allow-Headers: Authorization, Content-Type');
+header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS');
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    if ($requestOrigin !== '' && !$originAllowed) {
+        http_response_code(403);
+        exit;
+    }
     http_response_code(204);
     exit;
 }
