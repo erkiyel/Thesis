@@ -31,6 +31,7 @@ if (is_file($localEnv) && is_readable($localEnv)) {
 $configuredOrigins = getenv('ONCOPHIL_ALLOWED_ORIGINS');
 $allowedOrigins = [
     'https://thesis-2lz262yk5-erkiyels-projects.vercel.app',
+    'https://thesis-three-nu.vercel.app',
 ];
 if ($configuredOrigins === false || trim($configuredOrigins) === '') {
     array_push($allowedOrigins, 'http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174');
