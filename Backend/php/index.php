@@ -29,16 +29,26 @@ if (is_file($localEnv) && is_readable($localEnv)) {
 }
 
 $configuredOrigins = getenv('ONCOPHIL_ALLOWED_ORIGINS');
-$allowedOrigins = $configuredOrigins === false || trim($configuredOrigins) === ''
-    ? ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174']
-    : array_values(array_filter(array_map(static fn(string $origin): string => rtrim(trim($origin), '/'), explode(',', $configuredOrigins))));
+$allowedOrigins = [
+    'https://thesis-2lz262yk5-erkiyels-projects.vercel.app',
+];
+if ($configuredOrigins === false || trim($configuredOrigins) === '') {
+    array_push($allowedOrigins, 'http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174');
+} else {
+    $extraOrigins = array_values(array_filter(array_map(
+        static fn(string $origin): string => rtrim(trim($origin), '/'),
+        explode(',', $configuredOrigins),
+    )));
+    array_push($allowedOrigins, ...$extraOrigins);
+}
 $requestOrigin = rtrim(trim((string)($_SERVER['HTTP_ORIGIN'] ?? '')), '/');
-$originAllowed = $requestOrigin !== '' && in_array($requestOrigin, $allowedOrigins, true);
+$isAllowedVercelPreview = preg_match('/^https:\/\/thesis-[a-z0-9-]+-erkiyels-projects\.vercel\.app$/i', $requestOrigin) === 1;
+$originAllowed = $requestOrigin !== '' && (in_array($requestOrigin, $allowedOrigins, true) || $isAllowedVercelPreview);
 if ($originAllowed) {
     header('Access-Control-Allow-Origin: ' . $requestOrigin);
     header('Vary: Origin');
 }
-header('Access-Control-Allow-Headers: Authorization, Content-Type');
+header('Access-Control-Allow-Headers: Accept, Authorization, Content-Type');
 header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
