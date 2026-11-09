@@ -642,6 +642,7 @@ function route(string $method, string $path): void {
             respond(medicineOutput(updateTable('medicines', 'id=eq.' . rawurlencode($id), $data)));
         }
         $data['image_url'] = imageUpload(null);
+        if (!$data['image_url']) fail(400, 'Please upload a product image before adding this medicine.');
         respond(medicineOutput(insertTable('medicines', $data)), 201);
     }
     if (preg_match('#^/admin/medicines/([^/]+)$#', $path, $match) && in_array($method, ['POST', 'PUT'], true)) {
