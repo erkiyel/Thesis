@@ -17,10 +17,12 @@ export default function ForgotPassword() {
     event.preventDefault();
     setError('');
     setSent(false);
+    const normalizedEmail = email.trim();
+    if (normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) { setError('Enter a valid email address.'); return; }
     setIsSubmitting(true);
 
     try {
-      await requestPasswordReset(email.trim());
+      await requestPasswordReset(normalizedEmail);
       setSent(true);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Unable to send the reset email.');
@@ -35,7 +37,7 @@ export default function ForgotPassword() {
         <div className="flex items-center justify-between">
           <Link href="/login" className="flex items-center gap-2" data-testid="link-forgot-back">
             <span className="brand-mark size-8 rounded-md" aria-hidden="true" />
-            <span className="font-serif text-lg font-extrabold tracking-tight">oncophil</span>
+            <span className="font-serif text-lg font-extrabold tracking-tight">Jacdash</span>
           </Link>
           <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             <KeyRound size={13} /> account recovery
@@ -55,6 +57,7 @@ export default function ForgotPassword() {
               <Input
                 id="recovery-email"
                 type="email"
+                maxLength={254}
                 autoComplete="email"
                 required
                 value={email}

@@ -138,7 +138,7 @@ function requireSupabase() {
 export async function updateOwnProfileName(userId: string, fullName: string) {
   const client = requireSupabase();
   const normalizedName = fullName.trim();
-  if (!normalizedName) throw new Error('Enter your full name.');
+  if (!normalizedName || normalizedName.length > 120) throw new Error('Enter your full name up to 120 characters.');
 
   const { data, error } = await client
     .from('profiles')
@@ -156,7 +156,7 @@ export async function updateOwnProfileName(userId: string, fullName: string) {
 export async function requestEmailChange(email: string) {
   const client = requireSupabase();
   const normalizedEmail = email.trim();
-  if (!normalizedEmail) throw new Error('Enter your new email address.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) throw new Error('Enter a valid email address.');
 
   const { error } = await client.auth.updateUser({ email: normalizedEmail });
   if (error) throw new Error(error.message);
@@ -233,6 +233,7 @@ export async function getPasswordRecoverySession() {
 }
 
 export async function updatePassword(password: string) {
+  if (password.length < 8 || password.length > 128) throw new Error('Password must be between 8 and 128 characters.');
   if (!supabase) {
     throw new Error(
       'Supabase is not configured. Add the Supabase project URL and publishable key.',
@@ -244,6 +245,8 @@ export async function updatePassword(password: string) {
 }
 
 export async function changePassword(currentPassword: string, newPassword: string) {
+  if (!currentPassword) throw new Error('Enter your current password.');
+  if (newPassword.length < 8 || newPassword.length > 128) throw new Error('Password must be between 8 and 128 characters.');
   const client = requireSupabase();
   const { data: current, error: userError } = await client.auth.getUser();
   if (userError || !current.user?.email) {

@@ -86,8 +86,16 @@ router.post("/admin/clients", async (req, res): Promise<void> => {
       email: parsed.data.email.trim().toLowerCase(),
       password: parsed.data.initialPassword,
     };
-    if (!input.fullName) {
-      res.status(400).json({ error: "Full name is required." });
+    if (!input.fullName || input.fullName.length > 120) {
+      res.status(400).json({ error: "Enter a full name up to 120 characters." });
+      return;
+    }
+    if (input.email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email)) {
+      res.status(400).json({ error: "Enter a valid email address." });
+      return;
+    }
+    if (typeof input.password !== "string" || input.password.length < 8 || input.password.length > 128) {
+      res.status(400).json({ error: "Initial password must be between 8 and 128 characters." });
       return;
     }
 

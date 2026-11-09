@@ -67,7 +67,11 @@ export default function UserManagement() {
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormMessage('');
-    createClient.mutate({ fullName, email, initialPassword });
+    const normalizedEmail = email.trim();
+    if (!fullName.trim() || fullName.trim().length > 120) return setFormMessage('Enter a full name up to 120 characters.');
+    if (normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) return setFormMessage('Enter a valid email address.');
+    if (initialPassword.length < 8 || initialPassword.length > 128) return setFormMessage('Initial password must be between 8 and 128 characters.');
+    createClient.mutate({ fullName: fullName.trim(), email: normalizedEmail, initialPassword });
   }
 
   return (
@@ -104,7 +108,7 @@ export default function UserManagement() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="client-email">Email</Label>
-                <Input id="client-email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="maria@organisation.com" className="h-11 bg-background" data-testid="input-client-email" />
+                <Input id="client-email" type="email" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="maria@organisation.com" className="h-11 bg-background" data-testid="input-client-email" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="client-initial-password">Initial password</Label>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Excel validation and monthly Linear Regression forecasting for Oncophil."""
+"""Excel validation, monthly model comparison, and Linear Regression forecasts."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import hashlib
 import io
 import json
 import math
+import random
 import sys
 import unicodedata
 from collections import defaultdict
@@ -182,7 +183,8 @@ def parse_excel(encoded: str) -> dict:
 
 
 def product_key(value: object) -> str:
-    return normalized_header(value)
+    text = unicodedata.normalize("NFKD", str(value)).encode("ascii", "ignore").decode().casefold()
+    return "".join(character for character in text if character.isalnum())
 
 
 def safe_metric(values: np.ndarray, predictions: np.ndarray) -> dict:
@@ -209,10 +211,151 @@ def linear_regression_predict(x: np.ndarray, y: np.ndarray, predict_x: np.ndarra
     """Fit y = slope*x + intercept by ordinary least squares."""
     x_values = np.asarray(x, dtype=float).reshape(-1)
     y_values = np.asarray(y, dtype=float).reshape(-1)
-    design = np.column_stack((x_values, np.ones_like(x_values)))
+    centered_x = x_values - x_values[0]
+    design = np.column_stack((centered_x, np.ones_like(centered_x)))
     coefficients, _, _, _ = np.linalg.lstsq(design, y_values, rcond=None)
     target = np.asarray(predict_x, dtype=float).reshape(-1)
-    return target * coefficients[0] + coefficients[1]
+    return (target - x_values[0]) * coefficients[0] + coefficients[1]
+
+
+def seasonal_linear_regression_predict(x: np.ndarray, y: np.ndarray, predict_x: np.ndarray) -> np.ndarray:
+    """OLS trend plus annual sine/cosine terms on calendar-month ordinals."""
+    x_values = np.asarray(x, dtype=float).reshape(-1)
+    y_values = np.asarray(y, dtype=float).reshape(-1)
+    target = np.asarray(predict_x, dtype=float).reshape(-1)
+    origin = x_values[0]
+    train_time = x_values - origin
+    target_time = target - origin
+    train_phase = 2 * np.pi * np.mod(x_values, 12) / 12
+    target_phase = 2 * np.pi * np.mod(target, 12) / 12
+    design = np.column_stack((np.ones_like(train_time), train_time, np.sin(train_phase), np.cos(train_phase)))
+    target_design = np.column_stack((np.ones_like(target_time), target_time, np.sin(target_phase), np.cos(target_phase)))
+    coefficients, _, _, _ = np.linalg.lstsq(design, y_values, rcond=None)
+    return target_design @ coefficients
+
+
+def random_forest_predict(x: np.ndarray, y: np.ndarray, predict_x: np.ndarray, seed: int) -> np.ndarray:
+    """Small deterministic random-forest regressor using only NumPy/Python."""
+    x_values = np.asarray(x, dtype=float).reshape(-1)
+    y_values = np.asarray(y, dtype=float).reshape(-1)
+    target = np.asarray(predict_x, dtype=float).reshape(-1)
+    origin = x_values[0]
+
+    def make_features(values: np.ndarray) -> np.ndarray:
+        phase = 2 * np.pi * np.mod(values, 12) / 12
+        return np.column_stack((values - origin, np.sin(phase), np.cos(phase)))
+
+    features = make_features(x_values)
+    target_features = make_features(target)
+    generator = random.Random(seed)
+    trees: list[object] = []
+    min_leaf = max(2, int(math.sqrt(len(y_values)) / 3))
+
+    def grow(indices: list[int], depth: int, rng: random.Random) -> object:
+        values = y_values[indices]
+        mean = float(np.mean(values))
+        if depth <= 0 or len(indices) < min_leaf * 2 or np.all(values == values[0]):
+            return mean
+        best: tuple[float, int, float, list[int], list[int]] | None = None
+        columns = rng.sample(range(features.shape[1]), 2)
+        for column in columns:
+            unique = sorted(set(float(features[index, column]) for index in indices))
+            thresholds = [(left + right) / 2 for left, right in zip(unique, unique[1:])]
+            if len(thresholds) > 12:
+                thresholds = sorted(rng.sample(thresholds, 12))
+            for threshold in thresholds:
+                left = [index for index in indices if features[index, column] <= threshold]
+                right = [index for index in indices if features[index, column] > threshold]
+                if len(left) < min_leaf or len(right) < min_leaf:
+                    continue
+                left_mean = float(np.mean(y_values[left]))
+                right_mean = float(np.mean(y_values[right]))
+                loss = float(np.sum((y_values[left] - left_mean) ** 2) + np.sum((y_values[right] - right_mean) ** 2))
+                if best is None or loss < best[0]:
+                    best = (loss, column, threshold, left, right)
+        if best is None:
+            return mean
+        _, column, threshold, left, right = best
+        return (column, threshold, grow(left, depth - 1, rng), grow(right, depth - 1, rng))
+
+    def predict_tree(tree: object, row: np.ndarray) -> float:
+        node = tree
+        while isinstance(node, tuple):
+            column, threshold, left, right = node
+            node = left if row[int(column)] <= threshold else right
+        return float(node)
+
+    sample_count = len(y_values)
+    for _ in range(32):
+        rng = random.Random(generator.randrange(2**32))
+        bootstrap = [rng.randrange(sample_count) for _ in range(sample_count)]
+        trees.append(grow(bootstrap, 5, rng))
+    predictions = np.asarray([
+        np.mean([predict_tree(tree, row) for tree in trees])
+        for row in target_features
+    ])
+    return predictions
+
+
+def holt_winters_predict(periods: list[int], values: np.ndarray, target_periods: list[int]) -> np.ndarray:
+    """Additive monthly Holt-Winters; requires two complete observed seasons."""
+    y = np.asarray(values, dtype=float).reshape(-1)
+    if len(y) < 24 or any(right - left != 1 for left, right in zip(periods, periods[1:])):
+        raise ValueError("Holt-Winters requires at least 24 consecutive observed months.")
+    first_season = float(np.mean(y[:12]))
+    second_season = float(np.mean(y[12:24]))
+    level = first_season
+    trend = (second_season - first_season) / 12
+    seasonal = [float(value - first_season) for value in y[:12]]
+    alpha, beta, gamma = 0.5, 0.2, 0.3
+    for index in range(12, len(y)):
+        previous_level = level
+        season = seasonal[index % 12]
+        level = alpha * (y[index] - season) + (1 - alpha) * (level + trend)
+        trend = beta * (level - previous_level) + (1 - beta) * trend
+        seasonal[index % 12] = gamma * (y[index] - level) + (1 - gamma) * season
+    output = []
+    last_period = periods[-1]
+    for period in target_periods:
+        steps = period - last_period
+        output.append(level + steps * trend + seasonal[period % 12])
+    return np.asarray(output, dtype=float)
+
+
+MODEL_LABELS = {
+    "linear_regression": "Linear Regression",
+    "seasonal_linear_regression": "Seasonal Linear Regression",
+    "random_forest_regression": "Random Forest Regression",
+    "holt_winters": "Holt-Winters Exponential Smoothing",
+}
+
+
+def predict_with_model(model_type: str, periods: list[int], values: np.ndarray, target_periods: list[int], seed: int) -> np.ndarray:
+    if model_type == "linear_regression":
+        return linear_regression_predict(np.asarray(periods), values, np.asarray(target_periods))
+    if model_type == "seasonal_linear_regression":
+        return seasonal_linear_regression_predict(np.asarray(periods), values, np.asarray(target_periods))
+    if model_type == "random_forest_regression":
+        return random_forest_predict(np.asarray(periods), values, np.asarray(target_periods), seed)
+    if model_type == "holt_winters":
+        return holt_winters_predict(periods, values, target_periods)
+    raise ValueError(f"Unknown forecasting model: {model_type}")
+
+
+def model_candidates(periods: list[int], values: np.ndarray) -> list[dict]:
+    count = len(values)
+    candidates = [{"modelType": "linear_regression", "available": count >= 2, "reason": None if count >= 2 else "At least two training observations are required."}]
+    seasonal_ok = count >= 24 and periods[-1] - periods[0] >= 24
+    candidates.append({"modelType": "seasonal_linear_regression", "available": seasonal_ok, "reason": None if seasonal_ok else "Requires at least 24 training observations spanning two or more years."})
+    forest_ok = count >= 12
+    candidates.append({"modelType": "random_forest_regression", "available": forest_ok, "reason": None if forest_ok else "Requires at least 12 training observations for comparison."})
+    winters_ok = count >= 24 and all(right - left == 1 for left, right in zip(periods, periods[1:]))
+    candidates.append({"modelType": "holt_winters", "available": winters_ok, "reason": None if winters_ok else "Requires at least 24 consecutive observed months; gaps are not filled with invented zeros."})
+    return candidates
+
+
+def comparison_seed(medicine_id: str) -> int:
+    return int(hashlib.sha256(medicine_id.encode("utf-8")).hexdigest()[:8], 16)
 
 
 def forecast(payload: dict) -> dict:
@@ -223,13 +366,24 @@ def forecast(payload: dict) -> dict:
     medicines = list(payload.get("medicines", []))
     sales = list(payload.get("systemSales", []))
     excel_sales = list(payload.get("excelSales", []))
-    medicine_by_name = {product_key(m.get("name", "")): m for m in medicines if product_key(m.get("name", ""))}
+    medicine_by_name: dict[str, dict] = {}
+    ambiguous_medicine_names: set[str] = set()
+    for medicine in medicines:
+        key = product_key(medicine.get("name", ""))
+        if not key:
+            continue
+        existing = medicine_by_name.get(key)
+        if existing is not None and str(existing.get("id")) != str(medicine.get("id")):
+            ambiguous_medicine_names.add(key)
+        medicine_by_name[key] = medicine
     historical_by_id: dict[str, dict] = {}
     for row in excel_sales:
         historical_name = str(row.get("medicine", "")).strip()
         normalized_name = product_key(historical_name)
         if not normalized_name:
             raise ValueError("A historical sales row has no medicine name.")
+        if normalized_name in ambiguous_medicine_names:
+            raise ValueError(f"Historical medicine name '{historical_name}' matches multiple current inventory names after normalization.")
         match = medicine_by_name.get(normalized_name)
         if match:
             medicine_id = str(match["id"])
@@ -276,37 +430,100 @@ def forecast(payload: dict) -> dict:
     per_medicine: list[dict] = []
     validation_actual: list[float] = []
     validation_predictions: list[float] = []
+    model_comparisons: list[dict] = []
     forecastable = 0
+    future_periods = list(range(max(all_periods) + 1, max(all_periods) + horizon + 1))
     for medicine in medicines:
         medicine_id = str(medicine["id"])
         med = {period: quantity for (group_medicine_id, period), quantity in grouped.items() if group_medicine_id == medicine_id}
         if not med:
-            per_medicine.append({"medicineId": medicine["id"], "medicineName": medicine["name"], "status": "insufficient", "reason": "No sales recorded in the supplied history.", "inInventory": medicine["in_inventory"], "currentStock": int(medicine.get("stock_quantity", 0)) if medicine["in_inventory"] else None, "forecastDemand": None, "suggestedAdditionalStock": None, "recommendation": "Insufficient sales data", "metrics": None})
+            per_medicine.append({"medicineId": medicine["id"], "medicineName": medicine["name"], "status": "insufficient", "reason": "No sales recorded in the supplied history.", "observationCount": 0, "modelObservationCount": 0, "inInventory": medicine["in_inventory"], "currentStock": int(medicine.get("stock_quantity", 0)) if medicine["in_inventory"] else None, "forecastDemand": None, "suggestedAdditionalStock": None, "recommendation": "Insufficient sales data", "metrics": None})
             chart[str(medicine["id"])] = []
             continue
-        periods = list(range(min(med), max(med) + 1))
-        series = np.asarray([med.get(period, 0.0) for period in periods], dtype=float)
+        # Only recorded calendar-month totals are observations. Do not invent
+        # zero-sale observations for calendar months absent from the source.
+        periods = sorted(med)
+        series = np.asarray([med[period] for period in periods], dtype=float)
         actual_points = [{"period": month_start(period).strftime("%Y-%m"), "actual": round(float(value), 4), "forecast": None} for period, value in zip(periods, series)]
         item_chart = actual_points.copy()
-        if len(periods) < 4:
-            per_medicine.append({"medicineId": medicine["id"], "medicineName": medicine["name"], "status": "insufficient", "reason": f"At least 4 monthly observations are required; found {len(periods)}.", "inInventory": medicine["in_inventory"], "currentStock": int(medicine.get("stock_quantity", 0)) if medicine["in_inventory"] else None, "forecastDemand": None, "suggestedAdditionalStock": None, "recommendation": "Insufficient sales data", "metrics": None})
+        observed_month_count = len(med)
+        if observed_month_count < 4:
+            per_medicine.append({"medicineId": medicine["id"], "medicineName": medicine["name"], "status": "insufficient", "reason": f"At least 4 distinct months with recorded sales are required; found {observed_month_count}.", "observationCount": observed_month_count, "modelObservationCount": len(periods), "inInventory": medicine["in_inventory"], "currentStock": int(medicine.get("stock_quantity", 0)) if medicine["in_inventory"] else None, "forecastDemand": None, "suggestedAdditionalStock": None, "recommendation": "Insufficient sales data", "metrics": None})
             chart[str(medicine["id"])] = item_chart
             continue
 
         y = series
-        x = np.arange(len(y), dtype=float)
         holdout = max(1, int(math.ceil(len(y) * 0.2)))
-        train_end = len(y) - holdout
-        validation_pred = np.maximum(0, linear_regression_predict(x[:train_end], y[:train_end], x[train_end:]))
-        metrics = safe_metric(y[train_end:], validation_pred)
-        validation_actual.extend(y[train_end:].tolist())
-        validation_predictions.extend(validation_pred.tolist())
+        test_start = len(y) - holdout
+        training_periods = periods[:test_start]
+        training_values = y[:test_start]
+        test_periods = periods[test_start:]
+        test_values = y[test_start:]
+        months_since_last_sale = max(all_periods) - periods[-1]
+        seed = comparison_seed(medicine_id)
 
-        future_x = np.arange(len(y), len(y) + horizon, dtype=float)
-        future = np.maximum(0, linear_regression_predict(x, y, future_x))
+        # The baseline remains in production unless a challenger demonstrates
+        # a repeatable gain on validation data; the outer test set is never used
+        # to select which model is reported as the winner.
+        chosen_model = "linear_regression"
+        comparison_rows: list[dict] = []
+        if len(training_values) >= 12:
+            selection_count = max(1, int(math.ceil(len(training_values) * 0.2)))
+            selection_start = len(training_values) - selection_count
+            selection_train_periods = training_periods[:selection_start]
+            selection_train_values = training_values[:selection_start]
+            selection_periods = training_periods[selection_start:]
+            selection_values = training_values[selection_start:]
+            if len(selection_train_values) >= 2 and len(selection_values) > 0:
+                for candidate in model_candidates(selection_train_periods, selection_train_values):
+                    if candidate["modelType"] == "holt_winters" and any(right - left != 1 for left, right in zip(periods, periods[1:])):
+                        candidate["available"] = False
+                        candidate["reason"] = "Requires 24 consecutive observed months across the full series; gaps are not filled with invented zeros."
+                    row = {**candidate, "label": MODEL_LABELS[candidate["modelType"]], "trainingObservations": len(selection_train_values), "testObservations": len(selection_values), "selectionMetrics": None, "testTrainingObservations": len(training_values), "testObservationsFinal": len(test_values), "testMetrics": None}
+                    if candidate["available"]:
+                        try:
+                            prediction = np.maximum(0, predict_with_model(candidate["modelType"], selection_train_periods, selection_train_values, selection_periods, seed))
+                            row["selectionMetrics"] = safe_metric(selection_values, prediction)
+                            test_prediction_for_candidate = np.maximum(0, predict_with_model(candidate["modelType"], training_periods, training_values, test_periods, seed))
+                            row["testMetrics"] = safe_metric(test_values, test_prediction_for_candidate)
+                        except (ValueError, np.linalg.LinAlgError) as exc:
+                            row["available"] = False
+                            row["reason"] = str(exc)
+                    comparison_rows.append(row)
+        if not comparison_rows:
+            comparison_rows = [
+                {"modelType": "linear_regression", "label": MODEL_LABELS["linear_regression"], "available": True, "reason": "Baseline retained because there are too few pre-test observations for separate model selection.", "trainingObservations": len(training_values), "testObservations": 0, "selectionMetrics": None},
+                {"modelType": "seasonal_linear_regression", "label": MODEL_LABELS["seasonal_linear_regression"], "available": False, "reason": "Requires at least 24 training observations spanning two or more years.", "trainingObservations": len(training_values), "testObservations": 0, "selectionMetrics": None},
+                {"modelType": "random_forest_regression", "label": MODEL_LABELS["random_forest_regression"], "available": False, "reason": "Requires at least 12 training observations for comparison.", "trainingObservations": len(training_values), "testObservations": 0, "selectionMetrics": None},
+                {"modelType": "holt_winters", "label": MODEL_LABELS["holt_winters"], "available": False, "reason": "Requires at least 24 consecutive observed months; gaps are not filled with invented zeros.", "trainingObservations": len(training_values), "testObservations": 0, "selectionMetrics": None},
+            ]
+        try:
+            test_prediction = np.maximum(0, predict_with_model(chosen_model, training_periods, training_values, test_periods, seed))
+        except (ValueError, np.linalg.LinAlgError):
+            chosen_model = "linear_regression"
+            test_prediction = np.maximum(0, predict_with_model(chosen_model, training_periods, training_values, test_periods, seed))
+        metrics = safe_metric(test_values, test_prediction)
+        validation_actual.extend(test_values.tolist())
+        validation_predictions.extend(test_prediction.tolist())
+        for comparison in comparison_rows:
+            if comparison["modelType"] == chosen_model and comparison.get("testMetrics") is None:
+                comparison["testMetrics"] = metrics
+                comparison["testTrainingObservations"] = len(training_values)
+                comparison["testObservationsFinal"] = len(test_values)
+            comparison["selected"] = comparison["modelType"] == chosen_model
+        model_comparisons.append({"medicineId": medicine["id"], "medicineName": medicine["name"], "selectedModel": chosen_model, "candidates": comparison_rows})
+
+        try:
+            future = np.maximum(0, predict_with_model(chosen_model, periods, y, future_periods, seed))
+        except (ValueError, np.linalg.LinAlgError):
+            chosen_model = "linear_regression"
+            future = np.maximum(0, predict_with_model(chosen_model, periods, y, future_periods, seed))
+            for comparison in comparison_rows:
+                comparison["selected"] = comparison["modelType"] == chosen_model
+            model_comparisons[-1]["selectedModel"] = chosen_model
         future = np.round(future, 2)
-        for offset, quantity in enumerate(future, start=1):
-            period = month_start(periods[-1] + offset)
+        for period_ordinal, quantity in zip(future_periods, future):
+            period = month_start(period_ordinal)
             period_text = period.strftime("%Y-%m-%d")
             result_rows.append({"medicine_id": medicine["database_medicine_id"], "medicine_name": medicine["name"], "forecast_period": period_text, "predicted_quantity": float(quantity)})
             item_chart.append({"period": period.strftime("%Y-%m"), "actual": None, "forecast": float(quantity)})
@@ -316,11 +533,19 @@ def forecast(payload: dict) -> dict:
         stock = int(medicine.get("stock_quantity", 0)) if in_inventory else None
         add = max(0, int(math.ceil(demand - stock))) if stock is not None else None
         recommendation = ("Consider restocking" if add else "Stock level appears sufficient") if in_inventory else "Consider adding to inventory"
-        per_medicine.append({"medicineId": medicine["id"], "medicineName": medicine["name"], "status": "forecasted", "inInventory": in_inventory, "currentStock": stock, "forecastDemand": round(demand, 2), "expectedStockRequirement": int(math.ceil(demand)), "suggestedAdditionalStock": add, "recommendation": recommendation, "metrics": metrics})
+        per_medicine.append({"medicineId": medicine["id"], "medicineName": medicine["name"], "status": "forecasted", "modelType": chosen_model, "modelLabel": MODEL_LABELS[chosen_model], "observationCount": observed_month_count, "modelObservationCount": len(periods), "trainingObservationCount": len(training_values), "testObservationCount": len(test_values), "lastObservedPeriod": month_start(periods[-1]).strftime("%Y-%m"), "monthsSinceLastObservedSales": months_since_last_sale, "inInventory": in_inventory, "currentStock": stock, "forecastDemand": round(demand, 2), "expectedStockRequirement": int(math.ceil(demand)), "suggestedAdditionalStock": add, "recommendation": recommendation, "metrics": metrics})
         chart[str(medicine["id"])] = item_chart
 
     if forecastable == 0:
-        raise ValueError("No medicine has at least 4 monthly observations. Add more actual history before forecasting.")
+        insufficient_summary = "; ".join(
+            f"{medicine['medicineName']}: {medicine.get('observationCount', 0)} distinct months"
+            for medicine in per_medicine
+        )
+        raise ValueError(
+            "No medicine has at least 4 distinct months with recorded sales. "
+            "Add more actual history before forecasting. Current observations: "
+            + insufficient_summary
+        )
     actual_array = np.asarray(validation_actual, dtype=float)
     prediction_array = np.asarray(validation_predictions, dtype=float)
     metrics = safe_metric(actual_array, prediction_array)
@@ -330,22 +555,35 @@ def forecast(payload: dict) -> dict:
         if forecast_date is not None:
             overall_forecast[month_ordinal(forecast_date)] += float(row["predicted_quantity"])
     chart_overall = [
-        {"period": month_start(period).strftime("%Y-%m"), "actual": round(float(quantity), 4), "forecast": None}
-        for period, quantity in sorted(overall_actual.items())
+        {
+            "period": month_start(period).strftime("%Y-%m"),
+            "actual": round(float(overall_actual[period]), 4) if period in overall_actual else None,
+            # This is a shared visual endpoint only. The forecast results and
+            # forecast horizon still begin in the following calendar month.
+            "forecast": round(float(overall_actual[period]), 4) if period == max(all_periods) else None,
+        }
+        for period in range(min(all_periods), max(all_periods) + 1)
     ]
     chart_overall.extend(
-        {"period": month_start(period).strftime("%Y-%m"), "actual": None, "forecast": round(quantity, 2)}
-        for period, quantity in sorted(overall_forecast.items())
+        {"period": month_start(period).strftime("%Y-%m"), "actual": None, "forecast": round(overall_forecast.get(period, 0.0), 2)}
+        for period in future_periods
     )
     return {
         "historicalStartDate": global_start.strftime("%Y-%m-%d"),
         "historicalEndDate": global_end.strftime("%Y-%m-%d"),
         "forecastHorizon": horizon,
+        "forecastVersion": "aligned_calendar_v3",
         "periodGranularity": "monthly",
         "forecastedMedicineCount": forecastable,
         "medicineCount": len(medicines),
+        "modelType": "linear_regression",
         "metrics": metrics,
+        "trainingObservationCount": sum(medicine.get("trainingObservationCount", 0) for medicine in per_medicine),
+        "testObservationCount": sum(medicine.get("testObservationCount", 0) for medicine in per_medicine),
+        "evaluationMethod": "nested_chronological_holdout",
+        "evaluationDetails": "Challenger comparisons use a chronological validation slice from each medicine's pre-test history. Linear Regression remains selected unless a challenger shows a repeatable validation gain. Reported MAE, MAPE, and RMSE use a separate trailing 20% chronological holdout (rounded up, at least one observed month) after fitting on all earlier observations. Counts are pooled across forecasted medicines. Missing calendar months are not fabricated as zero-sales observations; all medicines share a forecast horizon immediately after the latest actual month.",
         "medicines": per_medicine,
+        "modelComparisons": model_comparisons,
         "results": result_rows,
         "chart": chart,
         "chartOverall": chart_overall,

@@ -45,12 +45,15 @@ export default function Login() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+    const normalizedEmail = email.trim();
+    if (normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) { setError('Enter a valid email address.'); return; }
+    if (!password || password.length > 128) { setError('Enter a password of 128 characters or fewer.'); return; }
     setRequiresConfirmation(false);
     setResendMessage('');
     setResendError('');
     setIsSubmitting(true);
     try {
-      const next = await login(email.trim(), password);
+      const next = await login(normalizedEmail, password);
       const role = getRole(next.user);
       if (!role) {
         const approvalStatus = next.user.profile?.approval_status;
@@ -80,6 +83,7 @@ export default function Login() {
     setResendError('');
     setResendMessage('');
     if (resendCooldown > 0) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || email.trim().length > 254) { setResendError('Enter a valid email address first.'); return; }
     setResendBusy(true);
     try {
       await resendSignupConfirmation(email);
@@ -111,7 +115,7 @@ export default function Login() {
             <div className="flex items-center gap-3">
               <span className="brand-mark" aria-hidden="true" />
               <div>
-                <p className="font-serif text-xl font-extrabold tracking-tight">oncophil</p>
+                <p className="font-serif text-xl font-extrabold tracking-tight">Jacdash</p>
                 <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-sidebar-foreground/50">pharmaceutical management</p>
               </div>
             </div>
@@ -130,25 +134,25 @@ export default function Login() {
           <div className="flex items-center lg:hidden">
             <Link href="/" className="flex items-center gap-2" data-testid="link-login-brand">
               <span className="brand-mark size-8 rounded-md" aria-hidden="true" />
-              <span className="font-serif text-lg font-extrabold tracking-tight">oncophil</span>
+              <span className="font-serif text-lg font-extrabold tracking-tight">Jacdash</span>
             </Link>
           </div>
 
           <div className="mx-auto w-full max-w-[420px] py-12 page-enter">
             <div className="mb-9">
               <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">Welcome back</p>
-              <h2 className="mt-3 font-serif text-4xl font-extrabold tracking-[-0.04em]">Sign in to Oncophil</h2>
+              <h2 className="mt-3 font-serif text-4xl font-extrabold tracking-[-0.04em]">Sign in to Jacdash Asia Corp.</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">Use your authorized account to continue to the right workspace.</p>
             </div>
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
               <div className="space-y-2">
                 <Label htmlFor="email">Work email</Label>
-                <Input id="email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@organisation.com" className="h-12 bg-card" data-testid="input-email" />
+                <Input id="email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@organisation.com" className="h-12 bg-card" data-testid="input-email" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                  <Input id="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" className="h-12 bg-card pr-11" data-testid="input-password" />
+                  <Input id="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" required maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" className="h-12 bg-card pr-11" data-testid="input-password" />
                   <button type="button" onClick={() => setShowPassword((value) => !value)} className="absolute right-1 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={showPassword ? 'Hide password' : 'Show password'} data-testid="button-toggle-password">
                     {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
                   </button>
@@ -189,7 +193,7 @@ export default function Login() {
           </div>
 
           <footer className="flex items-center justify-between gap-4 border-t border-border/70 pt-5 font-mono text-[10px] uppercase tracking-[0.13em] text-muted-foreground">
-            <span>Oncophil</span>
+            <span>Jacdash Asia Corp.</span>
             <span>Secure access</span>
           </footer>
         </section>

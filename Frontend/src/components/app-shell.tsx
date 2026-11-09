@@ -32,7 +32,7 @@ function Brand() {
     <Link href="/" className="flex items-center gap-3" data-testid="link-brand">
       <span className="brand-mark" aria-hidden="true" />
       <span>
-        <span className="block font-serif text-[1.05rem] font-extrabold tracking-tight text-sidebar-foreground">oncophil</span>
+        <span className="block font-serif text-[1.05rem] font-extrabold tracking-tight text-sidebar-foreground">Jacdash</span>
         <span className="block font-mono text-[9px] uppercase tracking-[0.2em] text-sidebar-foreground/55">operations workspace</span>
       </span>
     </Link>
@@ -127,7 +127,7 @@ export function AppShell({ role, title, eyebrow, children }: AppShellProps) {
             <LogOut size={15} /> Sign out
           </Button>
         </div>
-        <p className="mt-5 px-1 font-mono text-[10px] uppercase tracking-[0.16em] text-sidebar-foreground/35">Oncophil workspace</p>
+        <p className="mt-5 px-1 font-mono text-[10px] uppercase tracking-[0.16em] text-sidebar-foreground/35">Jacdash Asia Corp. workspace</p>
       </div>
     </aside>
   );

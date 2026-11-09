@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /*
- * Oncophil REST API
+ * Jacdash Asia Corp. REST API
  *
  * This intentionally uses Supabase's REST/Auth/Storage APIs instead of a
  * second database layer. The browser only sends its short-lived access token;
@@ -10,6 +10,7 @@ declare(strict_types=1);
  */
 
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'forecast-sales.php';
 
 // Load local server settings for PHP's built-in development server. Hosting
 // providers should continue to supply these values as environment variables.
@@ -198,13 +199,13 @@ function currentUser(): array {
 
     $profiles = supabaseRequest('/rest/v1/profiles?select=id,full_name,avatar_url,role,approval_status,organization_name&id=eq.' . rawurlencode((string)$user['id']));
     $profile = is_array($profiles) ? ($profiles[0] ?? null) : null;
-    if (!$profile) throw new ApiException(403, 'A valid Oncophil role is required.');
+    if (!$profile) throw new ApiException(403, 'A valid Jacdash Asia Corp. role is required.');
     $approvalStatus = (string)($profile['approval_status'] ?? 'approved');
     if ($approvalStatus !== 'approved') {
         $message = $approvalStatus === 'rejected' ? 'This registration was not approved. Contact the system administrator for help.' : 'Your account is pending administrator approval.';
         throw new ApiException(403, $message);
     }
-    if (!in_array($profile['role'] ?? '', ['admin', 'client', 'manager', 'partnership_account'], true)) throw new ApiException(403, 'A valid Oncophil role is required.');
+    if (!in_array($profile['role'] ?? '', ['admin', 'client', 'manager', 'partnership_account'], true)) throw new ApiException(403, 'A valid Jacdash Asia Corp. role is required.');
     return ['id' => (string)$user['id'], 'email' => $user['email'] ?? '', 'profile' => $profile, 'role' => $profile['role']];
 }
 
@@ -226,7 +227,48 @@ function textLength(string $value): int {
     return $count === false ? strlen($value) : $count;
 }
 
+function requireUuid(mixed $value, string $label = 'Record'): string {
+    $id = is_string($value) ? trim($value) : '';
+    if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $id)) {
+        fail(400, "{$label} ID is invalid.");
+    }
+    return strtolower($id);
+}
+
+function cleanText(mixed $value, string $label, int $maximum, bool $required = false): string {
+    if (!is_string($value) && !is_numeric($value)) fail(400, "{$label} must be text.");
+    $withoutControls = preg_replace('/[\\x00-\\x1F\\x7F]/u', '', (string)$value);
+    if (!is_string($withoutControls)) fail(400, "{$label} must contain valid text.");
+    $text = trim($withoutControls);
+    if (($required && $text === '') || textLength($text) > $maximum) fail(400, "{$label} is required and must be {$maximum} characters or fewer.");
+    return $text;
+}
+
+function nonnegativeInteger(mixed $value, string $label, bool $positive = false): int {
+    if (!(is_int($value) || is_string($value)) || !preg_match('/^\\d+$/', (string)$value)) fail(400, "{$label} must be a whole number.");
+    $number = filter_var((string)$value, FILTER_VALIDATE_INT);
+    if ($number === false || $number > 1000000000 || ($positive && $number < 1)) fail(400, "{$label} must be between " . ($positive ? '1' : '0') . ' and 1,000,000,000.');
+    return $number;
+}
+
+function nonnegativePrice(mixed $value): float {
+    if (!(is_int($value) || is_float($value) || is_string($value)) || !preg_match('/^\\d+(?:\\.\\d{1,2})?$/', (string)$value)) fail(400, 'Price must be a nonnegative amount with up to two decimal places.');
+    $price = (float)$value;
+    if (!is_finite($price) || $price > 1000000000) fail(400, 'Price is outside the allowed range.');
+    return round($price, 2);
+}
+
+function validDateOnly(mixed $value, string $label): ?string {
+    if ($value === null || $value === '') return null;
+    if (!is_string($value) || !preg_match('/^\\d{4}-\\d{2}-\\d{2}$/', $value)) fail(400, "{$label} must be a valid date.");
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+    $errors = DateTimeImmutable::getLastErrors();
+    if (!$date || ($errors && ($errors['warning_count'] || $errors['error_count'])) || $date->format('Y-m-d') !== $value) fail(400, "{$label} must be a valid date.");
+    return $value;
+}
+
 function validateAccountInput(array $input, bool $includePassword): array {
+    foreach (['fullName', 'email', 'organizationName'] as $key) if (isset($input[$key]) && !is_string($input[$key])) fail(400, 'Account details must be text.');
     $fullName = trim((string)preg_replace('/[\x00-\x1F\x7F]/u', '', (string)($input['fullName'] ?? '')));
     $email = strtolower(trim((string)($input['email'] ?? '')));
     $organization = trim((string)preg_replace('/[\x00-\x1F\x7F]/u', '', (string)($input['organizationName'] ?? '')));
@@ -235,6 +277,7 @@ function validateAccountInput(array $input, bool $includePassword): array {
     if (textLength($organization) > 160) fail(400, 'Organization name must be 160 characters or fewer.');
     $result = ['fullName' => $fullName, 'email' => $email, 'organizationName' => $organization !== '' ? $organization : null];
     if ($includePassword) {
+        if (isset($input['password']) && !is_string($input['password'])) fail(400, 'Password must be text.');
         $password = (string)($input['password'] ?? '');
         if (textLength($password) < 8 || textLength($password) > 128) fail(400, 'Password must be between 8 and 128 characters.');
         $result['password'] = $password;
@@ -246,8 +289,13 @@ function createPendingRegistration(array $input): array {
     $account = validateAccountInput($input, true);
     $redirectTo = trim((string)($input['emailRedirectTo'] ?? ''));
     $redirect = parse_url($redirectTo);
+    $redirectOrigin = is_array($redirect) ? strtolower((string)($redirect['scheme'] ?? '') . '://' . (string)($redirect['host'] ?? '') . (isset($redirect['port']) ? ':' . $redirect['port'] : '')) : '';
+    global $allowedOrigins;
+    $redirectOriginAllowed = in_array($redirectOrigin, $allowedOrigins, true)
+        || preg_match('/^https:\\/\\/thesis-[a-z0-9-]+-erkiyels-projects\\.vercel\\.app$/i', $redirectOrigin) === 1;
     if (!is_array($redirect) || !in_array(strtolower((string)($redirect['scheme'] ?? '')), ['http', 'https'], true)
         || empty($redirect['host']) || ($redirect['path'] ?? '') !== '/auth/callback'
+        || !$redirectOriginAllowed
         || isset($redirect['user']) || isset($redirect['pass']) || isset($redirect['query']) || isset($redirect['fragment'])) {
         fail(400, 'A valid email confirmation redirect is required.');
     }
@@ -386,11 +434,14 @@ function loadOrderDetails(array $order): array {
 }
 
 function imageUpload(?string $existing = null, string $folder = ''): ?string {
-    if (!isset($_FILES['image']) || !is_uploaded_file($_FILES['image']['tmp_name'])) return $existing;
+    if (!isset($_FILES['image'])) return $existing;
     $file = $_FILES['image'];
+    if (!is_array($file) || !is_string($file['tmp_name'] ?? null) || !is_uploaded_file($file['tmp_name'])) throw new ApiException(400, 'Choose a valid image file to upload.');
     if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) throw new ApiException(400, 'The image could not be uploaded.');
-    if (($file['size'] ?? 0) > 5 * 1024 * 1024) throw new ApiException(400, 'Images must be 5 MB or smaller.');
-    $mime = mime_content_type($file['tmp_name']) ?: '';
+    $actualSize = is_file($file['tmp_name']) ? filesize($file['tmp_name']) : false;
+    if (!is_int($actualSize) || $actualSize < 1 || $actualSize > 5 * 1024 * 1024 || (int)($file['size'] ?? 0) !== $actualSize) throw new ApiException(400, 'Images must be between 1 byte and 5 MB.');
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file($file['tmp_name']) ?: '';
     $allowed = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
     if (!isset($allowed[$mime])) throw new ApiException(400, 'Images must be JPG, PNG, or WebP.');
     // This must match the existing public Storage bucket. Never fall back to
@@ -400,6 +451,7 @@ function imageUpload(?string $existing = null, string $folder = ''): ?string {
     $base = rtrim(envValue('NEXT_PUBLIC_SUPABASE_URL'), '/');
     $key = envValue('SUPABASE_SERVICE_ROLE_KEY');
     $content = file_get_contents($file['tmp_name']);
+    if (!is_string($content)) throw new ApiException(400, 'The uploaded image could not be read.');
     [$response, $status] = httpRequest($base . '/storage/v1/object/' . rawurlencode($bucket) . '/' . $objectPath, 'POST', ["apikey: {$key}", "Authorization: Bearer {$key}", 'Content-Type: ' . $mime, 'x-upsert: true'], $content, 25);
     if ($status < 200 || $status >= 300) {
         $payload = readPayload($response);
@@ -467,7 +519,7 @@ function runForecastEngine(array $payload): array {
     $venvPython = $backend . DIRECTORY_SEPARATOR . '.venv' . DIRECTORY_SEPARATOR . 'Scripts' . DIRECTORY_SEPARATOR . 'python.exe';
     $python = $configured !== '' ? $configured : (is_file($venvPython) ? $venvPython : 'python');
     $process = proc_open([$python, $script], [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $backend);
-    if (!is_resource($process)) throw new ApiException(503, 'Python forecasting could not be started. Install Backend/python/requirements.txt or set ONCOPHIL_PYTHON.');
+    if (!is_resource($process)) throw new ApiException(503, 'Python forecasting could not be started. Contact the system administrator to check the server configuration.');
     fwrite($pipes[0], json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
     fclose($pipes[0]);
     $output = stream_get_contents($pipes[1]);
@@ -495,10 +547,19 @@ function selectAllRows(string $table, string $select, string $query = ''): array
 }
 
 function completedSystemSales(): array {
-    $orders = selectAllRows('orders', 'id,created_at', 'order_status=eq.delivered&order=created_at.asc');
+    $orders = selectAllRows('orders', 'id,order_status,created_at', 'order_status=eq.delivered&order=created_at.asc');
     if (!$orders) return [];
     $byId = [];
     foreach ($orders as $order) $byId[(string)$order['id']] = $order;
+    $deliveredOrders = array_values($byId);
+    $payments = [];
+    foreach (array_chunk(array_keys($byId), 100) as $orderIds) {
+        $ids = implode(',', array_map(static fn(string $id): string => rawurlencode($id), $orderIds));
+        array_push($payments, ...selectAllRows('payments', 'order_id,payment_status,created_at', 'order_id=in.(' . $ids . ')&order=created_at.desc'));
+    }
+    $byId = [];
+    foreach (paidAndDeliveredOrders($deliveredOrders, $payments) as $order) $byId[(string)$order['id']] = $order;
+    if (!$byId) return [];
     $medicineRows = selectAllRows('medicines', 'id,name');
     $medicineNames = [];
     foreach ($medicineRows as $medicine) $medicineNames[(string)$medicine['id']] = $medicine['name'];
@@ -517,16 +578,21 @@ function completedSystemSales(): array {
 }
 
 function createClientAccount(array $input): array {
+    $account = validateAccountInput([
+        'fullName' => $input['fullName'] ?? null,
+        'email' => $input['email'] ?? null,
+        'password' => $input['initialPassword'] ?? null,
+    ], true);
     $auth = supabaseRequest('/auth/v1/admin/users', 'POST', [
-        'email' => strtolower(trim((string)$input['email'])),
-        'password' => (string)$input['initialPassword'],
+        'email' => $account['email'],
+        'password' => $account['password'],
         'email_confirm' => true,
-        'user_metadata' => ['full_name' => trim((string)$input['fullName'])],
+        'user_metadata' => ['full_name' => $account['fullName']],
         'app_metadata' => ['role' => 'client'],
     ]);
     if (!is_array($auth) || empty($auth['id'])) throw new ApiException(502, 'Supabase did not return the new account.');
     try {
-        $profile = insertTable('profiles', ['id' => $auth['id'], 'full_name' => trim((string)$input['fullName']), 'avatar_url' => '', 'role' => 'client']);
+        $profile = insertTable('profiles', ['id' => $auth['id'], 'full_name' => $account['fullName'], 'avatar_url' => '', 'role' => 'client']);
     } catch (Throwable $error) {
         try { supabaseRequest('/auth/v1/admin/users/' . rawurlencode((string)$auth['id']), 'DELETE'); } catch (Throwable) {}
         throw $error;
@@ -558,17 +624,18 @@ function route(string $method, string $path): void {
     }
     if (preg_match('#^/admin/approvals/([^/]+)$#', $path, $match) && $method === 'POST') {
         requireAdmin();
+        $accountId = requireUuid($match[1], 'Account');
         $input = jsonBody();
-        $action = (string)($input['action'] ?? '');
-        $profile = oneTable('profiles', 'id=eq.' . rawurlencode($match[1]) . '&approval_status=eq.pending');
+        $action = is_string($input['action'] ?? null) ? $input['action'] : '';
+        $profile = oneTable('profiles', 'id=eq.' . rawurlencode($accountId) . '&approval_status=eq.pending');
         if (!$profile) fail(404, 'Pending registration not found.');
         if ($action === 'approve_manager') {
-            $updated = updateTable('profiles', 'id=eq.' . rawurlencode($match[1]) . '&approval_status=eq.pending', ['role' => 'manager', 'approval_status' => 'approved']);
+            $updated = updateTable('profiles', 'id=eq.' . rawurlencode($accountId) . '&approval_status=eq.pending', ['role' => 'manager', 'approval_status' => 'approved']);
         } elseif ($action === 'approve_partnership') {
             // `client` is the established partnership role used by existing rows and policies.
-            $updated = updateTable('profiles', 'id=eq.' . rawurlencode($match[1]) . '&approval_status=eq.pending', ['role' => 'client', 'approval_status' => 'approved']);
+            $updated = updateTable('profiles', 'id=eq.' . rawurlencode($accountId) . '&approval_status=eq.pending', ['role' => 'client', 'approval_status' => 'approved']);
         } elseif ($action === 'reject') {
-            $updated = updateTable('profiles', 'id=eq.' . rawurlencode($match[1]) . '&approval_status=eq.pending', ['approval_status' => 'rejected']);
+            $updated = updateTable('profiles', 'id=eq.' . rawurlencode($accountId) . '&approval_status=eq.pending', ['approval_status' => 'rejected']);
         } else fail(400, 'Choose a valid approval action.');
         respond(['id' => (string)$updated['id'], 'role' => (string)$updated['role'], 'approvalStatus' => (string)$updated['approval_status']]);
     }
@@ -594,7 +661,7 @@ function route(string $method, string $path): void {
     if ($path === '/admin/clients' && $method === 'POST') {
         requireAdmin();
         $input = jsonBody();
-        if (strlen(trim((string)($input['fullName'] ?? ''))) < 1 || !filter_var($input['email'] ?? '', FILTER_VALIDATE_EMAIL) || strlen((string)($input['initialPassword'] ?? '')) < 8) fail(400, 'Full name, valid email, and an initial password of at least 8 characters are required.');
+        validateAccountInput(['fullName' => $input['fullName'] ?? null, 'email' => $input['email'] ?? null, 'password' => $input['initialPassword'] ?? null], true);
         try { respond(createClientAccount($input), 201); } catch (ApiException $error) {
             if ($error->status === 422 || preg_match('/already|exist|registered/i', $error->getMessage())) fail(409, 'An account with that email already exists.');
             throw $error;
@@ -625,13 +692,14 @@ function route(string $method, string $path): void {
     if ($path === '/admin/medicines' && $method === 'POST') {
         requireAdmin();
         $input = $_POST ?: jsonBody();
-        $name = trim((string)($input['name'] ?? ''));
-        if ($name === '') fail(400, 'Medicine name is required.');
+        $name = cleanText($input['name'] ?? '', 'Medicine name', 160, true);
+        $rawAvailable = $input['isAvailable'] ?? true;
+        if (!in_array($rawAvailable, [true, false, 1, 0, '1', '0', 'true', 'false', 'on'], true)) fail(400, 'Availability must be true or false.');
         $data = [
             'name' => $name,
-            'price' => money($input['price'] ?? 0),
-            'stock_quantity' => max(0, (int)($input['stockQuantity'] ?? 0)),
-            'is_available' => filter_var($input['isAvailable'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            'price' => nonnegativePrice($input['price'] ?? null),
+            'stock_quantity' => nonnegativeInteger($input['stockQuantity'] ?? null, 'Stock quantity'),
+            'is_available' => filter_var($rawAvailable, FILTER_VALIDATE_BOOLEAN),
         ];
         $existing = null;
         if ($method === 'PUT') {
@@ -647,21 +715,25 @@ function route(string $method, string $path): void {
     }
     if (preg_match('#^/admin/medicines/([^/]+)$#', $path, $match) && in_array($method, ['POST', 'PUT'], true)) {
         requireAdmin();
+        $medicineId = requireUuid($match[1], 'Medicine');
         $input = $_POST ?: jsonBody();
-        $existing = oneTable('medicines', 'id=eq.' . rawurlencode($match[1]));
+        $existing = oneTable('medicines', 'id=eq.' . rawurlencode($medicineId));
         if (!$existing) fail(404, 'Medicine not found.');
+        $name = cleanText($input['name'] ?? $existing['name'] ?? '', 'Medicine name', 160, true);
+        $rawAvailable = $input['isAvailable'] ?? ($existing['is_available'] ?? true);
+        if (!in_array($rawAvailable, [true, false, 1, 0, '1', '0', 'true', 'false', 'on'], true)) fail(400, 'Availability must be true or false.');
         $data = [
-            'name' => trim((string)($input['name'] ?? $existing['name'] ?? '')),
-            'price' => money($input['price'] ?? $existing['price'] ?? 0),
-            'stock_quantity' => max(0, (int)($input['stockQuantity'] ?? $existing['stock_quantity'] ?? 0)),
-            'is_available' => filter_var($input['isAvailable'] ?? ($existing['is_available'] ?? true), FILTER_VALIDATE_BOOLEAN),
+            'name' => $name,
+            'price' => nonnegativePrice($input['price'] ?? $existing['price'] ?? null),
+            'stock_quantity' => nonnegativeInteger($input['stockQuantity'] ?? $existing['stock_quantity'] ?? null, 'Stock quantity'),
+            'is_available' => filter_var($rawAvailable, FILTER_VALIDATE_BOOLEAN),
             'image_url' => imageUpload($existing['image_url'] ?? null),
         ];
-        respond(medicineOutput(updateTable('medicines', 'id=eq.' . rawurlencode($match[1]), $data)));
+        respond(medicineOutput(updateTable('medicines', 'id=eq.' . rawurlencode($medicineId), $data)));
     }
     if (preg_match('#^/admin/medicines/([^/]+)$#', $path, $match) && $method === 'DELETE') {
         requireAdmin();
-        $medicineId = (string)$match[1];
+        $medicineId = requireUuid($match[1], 'Medicine');
         $medicine = oneTable('medicines', 'id=eq.' . rawurlencode($medicineId));
         if (!$medicine) fail(404, 'Medicine not found.');
         if (selectTable('order_items', 'id', 'medicine_id=eq.' . rawurlencode($medicineId) . '&limit=1')) {
@@ -691,13 +763,15 @@ function route(string $method, string $path): void {
         if (!in_array($user['role'], ['client', 'partnership_account'], true)) fail(403, 'Only Partnership Accounts can place orders.');
         $input = jsonBody();
         $items = is_array($input['items'] ?? null) ? $input['items'] : [];
-        $paymentMethod = strtolower((string)($input['paymentMethod'] ?? ''));
-        if (!$items || !in_array($paymentMethod, ['gcash', 'cash'], true)) fail(400, 'Choose at least one medicine and a GCash or Cash payment method.');
-        $total = 0.0; $normalized = [];
+        $paymentMethod = is_string($input['paymentMethod'] ?? null) ? strtolower($input['paymentMethod']) : '';
+        if (!$items || count($items) > 100 || !in_array($paymentMethod, ['gcash', 'cash'], true)) fail(400, 'Choose between 1 and 100 medicines and a GCash or Cash payment method.');
+        $total = 0.0; $normalized = []; $seenMedicineIds = [];
         foreach ($items as $item) {
-            $medicineId = (string)($item['medicineId'] ?? '');
-            $quantity = (int)($item['quantity'] ?? 0);
-            if ($quantity < 1) fail(400, 'Order quantities must be at least 1.');
+            if (!is_array($item)) fail(400, 'Each order item must include a medicine and quantity.');
+            $medicineId = requireUuid($item['medicineId'] ?? null, 'Medicine');
+            if (isset($seenMedicineIds[$medicineId])) fail(400, 'Each medicine can appear only once in an order.');
+            $seenMedicineIds[$medicineId] = true;
+            $quantity = nonnegativeInteger($item['quantity'] ?? null, 'Order quantity', true);
             $medicine = oneTable('medicines', 'id=eq.' . rawurlencode($medicineId) . '&is_available=eq.true');
             if (!$medicine || (int)($medicine['stock_quantity'] ?? 0) < $quantity) fail(400, 'One or more selected medicines are no longer available in that quantity.');
             $unitPrice = money($medicine['price'] ?? 0); $subtotal = money($unitPrice * $quantity); $total += $subtotal;
@@ -712,26 +786,30 @@ function route(string $method, string $path): void {
         respond(loadOrderDetails($order), 201);
     }
     if (preg_match('#^/orders/([^/]+)/tracking$#', $path, $match) && $method === 'GET') {
-        $order = oneTable('orders', 'id=eq.' . rawurlencode($match[1]));
+        $orderId = requireUuid($match[1], 'Order');
+        $order = oneTable('orders', 'id=eq.' . rawurlencode($orderId));
         if (!$order || (!in_array($user['role'], ['admin', 'manager'], true) && (string)($order['client_id'] ?? $order['user_id'] ?? '') !== $user['id'])) fail(404, 'Order not found.');
         respond(loadOrderDetails($order));
     }
     if (preg_match('#^/admin/orders/([^/]+)$#', $path, $match) && in_array($method, ['PATCH', 'PUT'], true)) {
         requireManagerOrAdmin();
+        $orderId = requireUuid($match[1], 'Order');
         $input = jsonBody();
-        $order = oneTable('orders', 'id=eq.' . rawurlencode($match[1]));
+        $order = oneTable('orders', 'id=eq.' . rawurlencode($orderId));
         if (!$order) fail(404, 'Order not found.');
         $allowedStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
-        $status = strtolower((string)($input['status'] ?? $order['order_status'] ?? 'pending'));
+        $rawStatus = $input['status'] ?? $order['order_status'] ?? 'pending';
+        $status = is_string($rawStatus) ? strtolower($rawStatus) : '';
         if (!in_array($status, $allowedStatuses, true)) fail(400, 'Invalid order status.');
         $paymentStatus = null;
         if (isset($input['paymentStatus'])) {
-            $paymentStatus = strtolower((string)$input['paymentStatus']);
+            if (!is_string($input['paymentStatus'])) fail(400, 'Invalid payment status.');
+            $paymentStatus = strtolower($input['paymentStatus']);
             if (!in_array($paymentStatus, ['unpaid', 'pending', 'paid', 'refunded'], true)) fail(400, 'Invalid payment status.');
         }
-        $updated = updateTable('orders', 'id=eq.' . rawurlencode($match[1]), ['order_status' => $status]);
+        $updated = updateTable('orders', 'id=eq.' . rawurlencode($orderId), ['order_status' => $status]);
         if ($paymentStatus !== null) {
-            $payments = selectTable('payments', '*', 'order_id=eq.' . rawurlencode($match[1]) . '&limit=1');
+            $payments = selectTable('payments', '*', 'order_id=eq.' . rawurlencode($orderId) . '&limit=1');
             if ($payments) {
                 $paymentData = ['payment_status' => $paymentStatus];
                 if ($paymentStatus === 'paid') $paymentData['paid_at'] = gmdate('c');
@@ -740,16 +818,20 @@ function route(string $method, string $path): void {
             }
         }
         if (isset($input['location']) || isset($input['estimatedDelivery']) || isset($input['notes'])) {
-            insertTable('order_tracking_events', ['order_id' => $match[1], 'status' => $status, 'location' => trim((string)($input['location'] ?? '')), 'estimated_delivery_at' => $input['estimatedDelivery'] ?? null, 'notes' => trim((string)($input['notes'] ?? '')), 'recorded_by' => $user['id']]);
+            $location = cleanText($input['location'] ?? '', 'Tracking location', 160);
+            $notes = cleanText($input['notes'] ?? '', 'Tracking notes', 1000);
+            $estimated = validDateOnly($input['estimatedDelivery'] ?? null, 'Estimated delivery date');
+            if ($estimated !== null && !empty($order['created_at']) && $estimated < substr((string)$order['created_at'], 0, 10)) fail(400, 'Estimated delivery cannot be earlier than the order date.');
+            insertTable('order_tracking_events', ['order_id' => $orderId, 'status' => $status, 'location' => $location, 'estimated_delivery_at' => $estimated, 'notes' => $notes, 'recorded_by' => $user['id']]);
         }
         respond(loadOrderDetails($updated));
     }
     if ($path === '/admin/forecasts/preview' && $method === 'POST') {
         requireManagerOrAdmin();
         $file = $_FILES['file'] ?? null;
-        if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'] ?? '')) fail(400, 'Choose an Excel workbook to preview.');
+        if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_string($file['tmp_name'] ?? null) || !is_uploaded_file($file['tmp_name'])) fail(400, 'Choose an Excel workbook to preview.');
         $extension = strtolower(pathinfo((string)($file['name'] ?? ''), PATHINFO_EXTENSION));
-        if (!in_array($extension, ['xlsx', 'xls'], true)) fail(400, 'Upload an .xlsx or .xls workbook.');
+        if ($extension !== 'xlsx') fail(400, 'Upload an .xlsx workbook.');
         if (($file['size'] ?? 0) < 1 || ($file['size'] ?? 0) > 10 * 1024 * 1024) fail(400, 'Excel files must be 10 MB or smaller.');
         $bytes = file_get_contents($file['tmp_name']);
         if (!is_string($bytes)) fail(400, 'The uploaded workbook could not be read.');
@@ -769,14 +851,17 @@ function route(string $method, string $path): void {
     if ($path === '/admin/forecasts/run' && $method === 'POST') {
         $admin = requireManagerOrAdmin();
         $input = jsonBody();
-        $horizon = (int)($input['horizon'] ?? 3);
-        if ($horizon < 1 || $horizon > 12) fail(400, 'Forecast horizon must be between 1 and 12 months.');
+        $rawHorizon = $input['horizon'] ?? 3;
+        if (!(is_int($rawHorizon) || (is_string($rawHorizon) && preg_match('/^\\d+$/', $rawHorizon))) || !in_array((int)$rawHorizon, [1, 3, 6, 12], true)) fail(400, 'Choose a forecast horizon of 1, 3, 6, or 12 months.');
+        $horizon = (int)$rawHorizon;
         $excelSales = [];
-        $importId = (string)($input['importId'] ?? '');
+        $importId = is_string($input['importId'] ?? null) ? $input['importId'] : '';
+        if (isset($input['importId']) && !is_string($input['importId'])) fail(400, 'Historical sales preview is invalid. Upload the workbook again.');
         if ($importId !== '') {
             if (!preg_match('/^[a-f0-9]{40}$/', $importId)) fail(400, 'Historical sales preview is invalid. Upload the workbook again.');
             $importPath = forecastRuntimeDirectory() . DIRECTORY_SEPARATOR . 'imports' . DIRECTORY_SEPARATOR . $importId . '.json';
             $importData = is_file($importPath) ? json_decode((string)file_get_contents($importPath), true) : null;
+            if (is_array($importData) && (string)($importData['uploadedBy'] ?? '') !== (string)$admin['id']) fail(403, 'This historical sales import belongs to another account. Upload the workbook again.');
             $excelSales = is_array($importData) ? ($importData['records'] ?? null) : null;
             if (!is_array($excelSales)) fail(400, 'Historical sales import is unavailable. Upload the workbook again.');
         }
@@ -794,7 +879,7 @@ function route(string $method, string $path): void {
             'historical_end_date' => $result['historicalEndDate'],
             'period_granularity' => 'monthly',
             'forecast_horizon' => $horizon,
-            'model_type' => 'linear_regression',
+            'model_type' => (string)($result['modelType'] ?? 'linear_regression'),
         ]);
         // Persist only columns that exist in forecast_results. Historical-only
         // products keep their name and have no linked inventory medicine.
@@ -810,12 +895,15 @@ function route(string $method, string $path): void {
         }
         $result['id'] = (string)$run['id'];
         $result['createdAt'] = $run['created_at'] ?? null;
-        $result['modelType'] = (string)($run['model_type'] ?? 'linear_regression');
+        $result['modelType'] = (string)($run['model_type'] ?? $result['modelType'] ?? 'linear_regression');
+        $result['evaluationMethod'] = (string)($result['evaluationMethod'] ?? 'holdout_test_data');
         $result['importId'] = $importId !== '' ? $importId : null;
         forecastMetadata((string)$run['id'], $result);
         respond($result, 201);
     }
     if ($path === '/admin/forecasts' && $method === 'GET') {
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
         requireManagerOrAdmin();
         $runs = selectAllRows('forecast_runs', '*', 'order=created_at.desc');
         if (!$runs) respond(['runs' => []]);
@@ -836,9 +924,15 @@ function route(string $method, string $path): void {
                 'periodGranularity' => $run['period_granularity'] ?? 'monthly',
                 'forecastHorizon' => (int)($run['forecast_horizon'] ?? 0),
                 'modelType' => $run['model_type'] ?? 'linear_regression',
+                'forecastVersion' => $details['forecastVersion'] ?? null,
                 'forecastedMedicineCount' => $details['forecastedMedicineCount'] ?? count(array_unique(array_map(static fn(array $row): string => !empty($row['medicine_id']) ? (string)$row['medicine_id'] : 'historical:' . strtolower(trim((string)($row['medicine_name'] ?? ''))), $resultsByRun[$id] ?? []))),
                 'metrics' => $details['metrics'] ?? null,
+                'trainingObservationCount' => $details['trainingObservationCount'] ?? null,
+                'testObservationCount' => $details['testObservationCount'] ?? null,
+                'evaluationMethod' => $details['evaluationMethod'] ?? null,
+                'evaluationDetails' => $details['evaluationDetails'] ?? null,
                 'medicines' => $details['medicines'] ?? [],
+                'modelComparisons' => $details['modelComparisons'] ?? [],
                 'chart' => $details['chart'] ?? [],
                 'chartOverall' => $details['chartOverall'] ?? [],
                 'results' => array_map(static fn(array $row): array => ['medicineId' => $row['medicine_id'] ?? null, 'medicineName' => $row['medicine_name'] ?? null, 'period' => $row['forecast_period'], 'quantity' => (float)$row['predicted_quantity']], $resultsByRun[$id] ?? []),

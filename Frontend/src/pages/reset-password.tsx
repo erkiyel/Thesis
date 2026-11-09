@@ -63,8 +63,8 @@ export default function ResetPassword() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
-    if (password.length < 8) {
-      setError('Your new password must be at least 8 characters.');
+    if (password.length < 8 || password.length > 128) {
+      setError('Your new password must be between 8 and 128 characters.');
       return;
     }
     if (password !== confirmation) {
@@ -91,7 +91,7 @@ export default function ResetPassword() {
         <div className="flex items-center justify-between">
           <Link href="/login" className="flex items-center gap-2" data-testid="link-reset-brand">
             <span className="brand-mark size-8 rounded-md" aria-hidden="true" />
-            <span className="font-serif text-lg font-extrabold tracking-tight">oncophil</span>
+            <span className="font-serif text-lg font-extrabold tracking-tight">Jacdash</span>
           </Link>
           <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
             <KeyRound size={13} /> password reset
@@ -102,7 +102,7 @@ export default function ResetPassword() {
           <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-primary">Choose a new password</p>
           <h1 className="mt-3 font-serif text-4xl font-extrabold tracking-[-0.04em]">Reset your access.</h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">
-            Use a new password for your Oncophil account. Your reset link can only be used within its validity window.
+            Use a new password for your Jacdash Asia Corp. account. Your reset link can only be used within its validity window.
           </p>
 
           {state === 'checking' && (
@@ -115,11 +115,11 @@ export default function ResetPassword() {
             <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
               <div className="space-y-2">
                 <Label htmlFor="new-password">New password</Label>
-                <Input id="new-password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" className="h-12 bg-card" data-testid="input-new-password" />
+                <Input id="new-password" type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 8 characters" className="h-12 bg-card" data-testid="input-new-password" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirm new password</Label>
-                <Input id="confirm-password" type="password" autoComplete="new-password" required minLength={8} value={confirmation} onChange={(event) => setConfirmation(event.target.value)} placeholder="Repeat your new password" className="h-12 bg-card" data-testid="input-confirm-password" />
+                <Input id="confirm-password" type="password" autoComplete="new-password" required minLength={8} maxLength={128} value={confirmation} onChange={(event) => setConfirmation(event.target.value)} placeholder="Repeat your new password" className="h-12 bg-card" data-testid="input-confirm-password" />
               </div>
               {error && (
                 <div className="rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm leading-5 text-destructive" role="alert" data-testid="status-reset-error">
@@ -147,7 +147,7 @@ export default function ResetPassword() {
 
           <div className="mt-8 flex items-start gap-3 border-t border-border pt-6 text-xs leading-5 text-muted-foreground">
             <ShieldCheck size={16} className="mt-0.5 shrink-0 text-primary" />
-            <p>Your password is managed by Supabase Auth and is never stored in the Oncophil application tables.</p>
+            <p>Your password is managed by Supabase Auth and is never stored in Jacdash Asia Corp. application tables.</p>
           </div>
         </section>
       </div>

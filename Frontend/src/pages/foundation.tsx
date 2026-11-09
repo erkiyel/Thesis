@@ -197,8 +197,8 @@ export function ProfilePage({ role }: { role: UserRole }) {
     setNameError('');
     setNameMessage('');
     const normalizedName = fullNameDraft.trim();
-    if (!normalizedName) {
-      setNameError('Enter your full name.');
+    if (!normalizedName || normalizedName.length > 120) {
+      setNameError('Enter your full name up to 120 characters.');
       return;
     }
     if (!user) {
@@ -226,6 +226,10 @@ export function ProfilePage({ role }: { role: UserRole }) {
     setEmailMessage('');
     if (!event.currentTarget.reportValidity()) return;
     const normalizedEmail = newEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || normalizedEmail.length > 254) {
+      setEmailError('Enter a valid email address.');
+      return;
+    }
     if (normalizedEmail.toLowerCase() !== confirmEmail.trim().toLowerCase()) {
       setEmailError('The email addresses do not match.');
       return;
@@ -257,8 +261,8 @@ export function ProfilePage({ role }: { role: UserRole }) {
       setPasswordError('Enter your current password.');
       return;
     }
-    if (newPassword.length < 8) {
-      setPasswordError('Use a password with at least 8 characters.');
+    if (newPassword.length < 8 || newPassword.length > 128) {
+      setPasswordError('Use a password between 8 and 128 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -327,8 +331,8 @@ export function ProfilePage({ role }: { role: UserRole }) {
                 )}
               </div>
               {editingEmail && <form className="mt-3 grid gap-3 sm:max-w-md" onSubmit={(event) => void changeEmail(event)}>
-                <div className="grid gap-2"><Label htmlFor="new-email">New Email</Label><Input id="new-email" type="email" autoComplete="email" required value={newEmail} onChange={(event) => setNewEmail(event.target.value)} /></div>
-                <div className="grid gap-2"><Label htmlFor="confirm-new-email">Confirm New Email</Label><Input id="confirm-new-email" type="email" autoComplete="email" required value={confirmEmail} onChange={(event) => setConfirmEmail(event.target.value)} /></div>
+                <div className="grid gap-2"><Label htmlFor="new-email">New Email</Label><Input id="new-email" type="email" autoComplete="email" required maxLength={254} value={newEmail} onChange={(event) => setNewEmail(event.target.value)} /></div>
+                <div className="grid gap-2"><Label htmlFor="confirm-new-email">Confirm New Email</Label><Input id="confirm-new-email" type="email" autoComplete="email" required maxLength={254} value={confirmEmail} onChange={(event) => setConfirmEmail(event.target.value)} /></div>
                 <Button type="submit" size="sm" className="w-fit" disabled={emailBusy}>{emailBusy ? 'Sending…' : 'Send Confirmation'}</Button>
               </form>}
               {emailError && <p role="alert" className="mt-2 text-sm text-destructive">{emailError}</p>}
@@ -377,7 +381,7 @@ export function ProfilePage({ role }: { role: UserRole }) {
             <div className="grid gap-2">
               <Label htmlFor="new-password">New Password</Label>
               <div className="relative">
-                <Input id="new-password" type={showNewPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={8} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} className="pr-10" />
+                <Input id="new-password" type={showNewPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={8} maxLength={128} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} className="pr-10" />
                 <button type="button" aria-label={showNewPassword ? 'Hide new password' : 'Show new password'} aria-pressed={showNewPassword} onClick={() => setShowNewPassword((visible) => !visible)} className="absolute right-1 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   {showNewPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                 </button>
@@ -386,7 +390,7 @@ export function ProfilePage({ role }: { role: UserRole }) {
             <div className="grid gap-2">
               <Label htmlFor="confirm-password">Confirm New Password</Label>
               <div className="relative">
-                <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="pr-10" />
+                <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" required minLength={8} maxLength={128} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="pr-10" />
                 <button type="button" aria-label={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'} aria-pressed={showConfirmPassword} onClick={() => setShowConfirmPassword((visible) => !visible)} className="absolute right-1 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   {showConfirmPassword ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
                 </button>

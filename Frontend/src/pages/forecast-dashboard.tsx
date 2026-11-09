@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { AlertTriangle, BrainCircuit, FileSpreadsheet, RefreshCw, TrendingUp } from 'lucide-react';
+import { AlertTriangle, BrainCircuit, FileSpreadsheet, Info, RefreshCw, TrendingUp } from 'lucide-react';
 import { AppShell } from '@/components/app-shell';
 import { DatabaseLoading } from '@/components/database-loading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tooltip as InfoTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { apiRequest, formatDate } from '@/lib/api';
 
 type Metrics = { mae: number; mape: number | null; rmse: number; mapeSamples: number } | null;
@@ -20,7 +21,17 @@ type ForecastMedicine = {
   suggestedAdditionalStock: number | null;
   recommendation: string;
   metrics: Metrics;
+  observationCount?: number;
+  modelObservationCount?: number;
+  modelType?: string;
+  modelLabel?: string;
+  trainingObservationCount?: number;
+  testObservationCount?: number;
+  lastObservedPeriod?: string;
+  monthsSinceLastObservedSales?: number;
 };
+type ModelCandidate = { modelType: string; label: string; available: boolean; reason: string | null; trainingObservations: number; testObservations: number; selectionMetrics: Metrics; testTrainingObservations?: number; testObservationsFinal?: number; testMetrics?: Metrics; selected?: boolean };
+type ModelComparison = { medicineId: string; medicineName: string; selectedModel: string; candidates: ModelCandidate[] };
 type ChartPoint = { period: string; actual: number | null; forecast: number | null };
 type ForecastRun = {
   id: string;
@@ -29,9 +40,15 @@ type ForecastRun = {
   historicalEndDate: string | null;
   periodGranularity: string;
   forecastHorizon: number;
+  forecastVersion?: string | null;
   modelType: string;
   forecastedMedicineCount: number;
   metrics: Metrics;
+  trainingObservationCount?: number | null;
+  testObservationCount?: number | null;
+  modelComparisons?: ModelComparison[];
+  evaluationMethod?: string | null;
+  evaluationDetails?: string | null;
   medicines: ForecastMedicine[];
   chart: Record<string, ChartPoint[]>;
   chartOverall: ChartPoint[];
@@ -41,10 +58,49 @@ type Preview = { valid: boolean; importId: string | null; rowCount: number; vali
 type HistoricalImport = { id: string; fileName: string; rowCount: number; createdAt: string | null };
 
 const metricLabel = (value: number | null | undefined, suffix = '') => value == null ? '—' : `${value.toFixed(2)}${suffix}`;
+const metricExplanations = {
+  MAE: 'Mean Absolute Error: average absolute difference between actual and predicted sales quantities. Lower means smaller average errors. The unit is units sold.',
+  MAPE: 'Mean Absolute Percentage Error: average absolute error as a percentage of actual sales. Lower generally indicates better accuracy. Zero actual values are excluded because percentage error is undefined; if all holdout actuals are zero, MAPE is unavailable.',
+  RMSE: 'Root Mean Squared Error: square root of the average squared prediction errors, so larger errors count more. Lower generally indicates better accuracy.',
+};
 const chartColors = ['#477b62', '#c47c35', '#6382a6', '#a35d73', '#8a7cba', '#55a6a6', '#c05640', '#7b8794'];
+const currentForecastVersion = 'aligned_calendar_v3';
 
 type MedicineSalesSlice = { medicineId: string; medicineName: string; quantity: number };
 type MonthlySalesPoint = { period: string; actual: number | null; forecast: number | null };
+
+function MetricWithInfo({ name, value, suffix = '' }: { name: keyof typeof metricExplanations; value: number | null | undefined; suffix?: string }) {
+  return <span className="inline-flex items-center gap-1 whitespace-nowrap">
+    <span>{name} {metricLabel(value, suffix)}</span>
+    <InfoTooltip>
+      <TooltipTrigger asChild><button type="button" aria-label={`Explain ${name}`} className="inline-flex size-6 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><Info size={13} aria-hidden="true" /></button></TooltipTrigger>
+      <TooltipContent className="max-w-64 whitespace-normal leading-relaxed">{metricExplanations[name]}</TooltipContent>
+    </InfoTooltip>
+  </span>;
+}
+
+function evaluationLabel(method: string | null | undefined) {
+  if (method === 'nested_chronological_holdout') return 'Nested Chronological Holdout';
+  if (method === 'holdout_test_data') return 'Holdout Test Data';
+  return 'Not Available';
+}
+
+function evaluationSummary(method: string | null | undefined) {
+  if (method === 'nested_chronological_holdout') return 'Candidates are compared on earlier months; reported metrics use a separate trailing 20% test holdout.';
+  if (method === 'holdout_test_data') return 'The trailing 20% of observed months were held out for testing.';
+  return 'No saved evaluation method is available for this run.';
+}
+
+function modelLabel(modelType: string | null | undefined) {
+  const labels: Record<string, string> = {
+    per_medicine_selection: 'Per-medicine model selection',
+    linear_regression: 'Linear Regression',
+    seasonal_linear_regression: 'Seasonal Linear Regression',
+    random_forest_regression: 'Random Forest Regression',
+    holt_winters: 'Holt-Winters Exponential Smoothing',
+  };
+  return modelType ? labels[modelType] ?? modelType.replaceAll('_', ' ') : 'Not Available';
+}
 
 export default function ForecastDashboard({ role = 'admin' }: { role?: 'admin' | 'manager' }) {
   const [runs, setRuns] = useState<ForecastRun[]>([]);
@@ -62,7 +118,7 @@ export default function ForecastDashboard({ role = 'admin' }: { role?: 'admin' |
     setLoading(true);
     try {
       const [response, importResponse] = await Promise.all([
-        apiRequest<{ runs: ForecastRun[] }>('/admin/forecasts'),
+        apiRequest<{ runs: ForecastRun[] }>('/admin/forecasts', { cache: 'no-store' }),
         apiRequest<{ imports: HistoricalImport[] }>('/admin/forecasts/imports'),
       ]);
       setRuns(response.runs); setImports(importResponse.imports);
@@ -94,6 +150,16 @@ export default function ForecastDashboard({ role = 'admin' }: { role?: 'admin' |
     () => salesByMedicine.reduce((total, medicine) => total + medicine.quantity, 0),
     [salesByMedicine],
   );
+  const hasMisalignedHistoricalForecast = useMemo(() => {
+    if (!selectedRun || selectedRun.forecastVersion === currentForecastVersion) return false;
+    const latestActualPeriod = selectedRun.chartOverall
+      .filter((point) => point.actual != null)
+      .reduce((latest, point) => point.period > latest ? point.period : latest, '');
+    return selectedRun.chartOverall.some((point) => point.forecast != null && point.period <= latestActualPeriod);
+  }, [selectedRun]);
+  const staleForecastMedicineCount = useMemo(() => selectedRun?.medicines.filter(
+    (medicine) => medicine.status === 'forecasted' && (medicine.monthsSinceLastObservedSales ?? 0) > selectedRun.forecastHorizon,
+  ).length ?? 0, [selectedRun]);
   const monthlySales = useMemo<MonthlySalesPoint[]>(() => {
     const months = new Map<string, MonthlySalesPoint>();
     for (const point of selectedRun?.chartOverall ?? []) {
@@ -111,6 +177,11 @@ export default function ForecastDashboard({ role = 'admin' }: { role?: 'admin' |
     const next = event.target.files?.[0] ?? null;
     setFile(next); setPreview(null); setError(''); setImportId('');
     if (!next) return;
+    if (!next.name.toLowerCase().endsWith('.xlsx') || next.size < 1 || next.size > 10 * 1024 * 1024) {
+      setFile(null);
+      setError('Choose a non-empty .xlsx workbook up to 10 MB.');
+      return;
+    }
     const data = new FormData(); data.append('file', next);
     setPreviewing(true);
     try {
@@ -157,8 +228,8 @@ export default function ForecastDashboard({ role = 'admin' }: { role?: 'admin' |
 
       <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
         <div className="flex items-start gap-4"><span className="flex size-10 items-center justify-center rounded-xl bg-secondary text-primary"><FileSpreadsheet size={18} /></span><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Historical sales import</p><h3 className="mt-2 font-serif text-2xl font-extrabold">Add pre-system sales</h3></div></div>
-        <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground">Upload .xlsx or .xls with Date, Medicine/Product, and Quantity Sold columns. Sales Amount is optional. Product names must match current inventory names. A validated upload is kept privately by the backend for later forecasts.</p>
-        <div className="mt-5 flex flex-wrap items-end gap-4"><label className="grid gap-2 text-xs font-semibold text-muted-foreground">Excel workbook<Input type="file" accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" onChange={(event) => void chooseFile(event)} /></label><label className="grid gap-2 text-xs font-semibold text-muted-foreground">Historical sales to include<select className="h-10 min-w-64 rounded-md border border-input bg-background px-3 text-sm text-foreground" value={importId} onChange={(event) => { setImportId(event.target.value); setFile(null); setPreview(null); }}><option value="">Delivered system orders only</option>{imports.map((item) => <option key={item.id} value={item.id}>{item.fileName} · {item.rowCount.toLocaleString()} rows</option>)}</select></label>{previewing && <span className="text-sm text-muted-foreground">Validating workbook…</span>}{file && preview?.valid && <span className="text-sm text-emerald-700">{preview.validRows.toLocaleString()} rows validated · ready for forecast</span>}{!file && importId && <span className="text-sm text-emerald-700">Saved historical workbook selected</span>}</div>
+        <p className="mt-4 max-w-3xl text-sm leading-6 text-muted-foreground">Upload .xlsx or .xls with Date, Medicine/Product, and Quantity Sold columns. Sales Amount is optional. Names matching inventory are linked to those medicines; unmatched names remain historical-only. A validated upload is kept privately by the backend for later forecasts.</p>
+        <div className="mt-5 flex flex-wrap items-end gap-4"><label className="grid gap-2 text-xs font-semibold text-muted-foreground">Excel workbook<Input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => void chooseFile(event)} /></label><label className="grid gap-2 text-xs font-semibold text-muted-foreground">Historical sales to include<select className="h-10 min-w-64 rounded-md border border-input bg-background px-3 text-sm text-foreground" value={importId} onChange={(event) => { setImportId(event.target.value); setFile(null); setPreview(null); }}><option value="">Paid and delivered system orders only</option>{imports.map((item) => <option key={item.id} value={item.id}>{item.fileName} · {item.rowCount.toLocaleString()} rows</option>)}</select></label>{previewing && <span className="text-sm text-muted-foreground">Validating workbook…</span>}{file && preview?.valid && <span className="text-sm text-emerald-700">{preview.validRows.toLocaleString()} rows validated · ready for forecast</span>}{!file && importId && <span className="text-sm text-emerald-700">Saved historical workbook selected</span>}</div>
         {preview && <div className="mt-5 space-y-4">
           <div className="flex flex-wrap gap-3 text-xs"><span className="rounded-md bg-secondary px-3 py-2">Rows: {preview.rowCount}</span><span className="rounded-md bg-secondary px-3 py-2">Valid: {preview.validRows}</span><span className={`rounded-md px-3 py-2 ${preview.invalidRows ? 'bg-destructive/10 text-destructive' : 'bg-emerald-600/10 text-emerald-700'}`}>Invalid: {preview.invalidRows}</span></div>
           {Object.keys(preview.columns).length > 0 && <p className="text-xs text-muted-foreground">Detected: {Object.entries(preview.columns).map(([key, value]) => `${key} → ${value}`).join(' · ')}</p>}
@@ -203,28 +274,65 @@ export default function ForecastDashboard({ role = 'admin' }: { role?: 'admin' |
         <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Monthly totals</p>
         <h3 className="mt-2 font-serif text-2xl font-extrabold">Overall monthly sales</h3>
         <p className="mt-2 text-sm text-muted-foreground">Total quantity sold each month, with the Linear Regression forecast shown after the historical period.</p>
+        {selectedRun && selectedRun.forecastVersion !== currentForecastVersion && <span className="mt-3 inline-flex rounded-full bg-secondary px-3 py-1 text-xs font-medium text-muted-foreground">Historical run</span>}
+        {staleForecastMedicineCount > 0 && <p className="mt-3 text-xs text-muted-foreground">{staleForecastMedicineCount} forecasted {staleForecastMedicineCount === 1 ? 'product has' : 'products have'} no recorded sales within the forecast horizon before the latest history. See each product’s last-sale date below.</p>}
         <div className="mt-5 h-[340px] w-full">
           {loading ? <DatabaseLoading label="Loading monthly sales" /> : error ? null : monthlySales.length ? <ResponsiveContainer width="100%" height="100%"><LineChart data={monthlySales} margin={{ top: 8, right: 18, left: 8, bottom: 8 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis dataKey="period" tick={{ fontSize: 11 }} label={{ value: 'Month', position: 'insideBottom', offset: -4, fontSize: 12 }} />
             <YAxis allowDecimals={false} tick={{ fontSize: 11 }} label={{ value: 'Total sales quantity', angle: -90, position: 'insideLeft', fontSize: 12 }} />
-            <Tooltip formatter={(value) => `${Number(value).toLocaleString()} units`} />
+            <Tooltip formatter={(value) => value == null ? 'No recorded sales' : `${Number(value).toLocaleString()} units`} />
             <Legend />
             <Line type="monotone" dataKey="actual" name="Actual Sales" stroke="#477b62" strokeWidth={2.5} dot={{ r: 3 }} connectNulls />
-            <Line type="monotone" dataKey="forecast" name="Forecasted Sales" stroke="#c47c35" strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 3 }} connectNulls />
+            <Line type="monotone" dataKey="forecast" name={hasMisalignedHistoricalForecast ? 'Forecasted Sales · Historical run' : 'Forecasted Sales'} stroke="#c47c35" strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 3 }} connectNulls />
           </LineChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border text-center text-sm text-muted-foreground">Monthly actual and forecasted sales will appear after a forecast is run.</div>}
         </div>
       </section>
 
+      {selectedRun?.modelComparisons?.length ? <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+        <details className="rounded-lg border border-border px-4 py-3">
+          <summary className="cursor-pointer text-sm font-semibold">Model comparison results</summary>
+          <div className="mt-4 space-y-4">
+            {selectedRun.modelComparisons.map((comparison) => <div key={comparison.medicineId} className="overflow-x-auto">
+              <p className="mb-2 text-sm font-medium">{comparison.medicineName}</p>
+              <table className="w-full min-w-[1300px] text-left text-xs">
+                <thead><tr className="border-b border-border text-muted-foreground"><th className="py-2 pr-3">Candidate</th><th className="py-2 pr-3">Validation data</th><th className="py-2 pr-3">Validation MAE</th><th className="py-2 pr-3">Validation MAPE</th><th className="py-2 pr-3">Validation RMSE</th><th className="py-2 pr-3">Final test data</th><th className="py-2 pr-3">Final test MAE</th><th className="py-2 pr-3">Final test MAPE</th><th className="py-2 pr-3">Final test RMSE</th><th className="py-2">Status</th></tr></thead>
+                <tbody>{comparison.candidates.map((candidate) => <tr key={candidate.modelType} className="border-b border-border/50"><td className="py-2 pr-3">{candidate.label}</td><td className="py-2 pr-3">Train {candidate.trainingObservations} · test {candidate.testObservations}</td><td className="py-2 pr-3">{metricLabel(candidate.selectionMetrics?.mae)}</td><td className="py-2 pr-3">{metricLabel(candidate.selectionMetrics?.mape, '%')}</td><td className="py-2 pr-3">{metricLabel(candidate.selectionMetrics?.rmse)}</td><td className="py-2 pr-3">Train {candidate.testTrainingObservations ?? '—'} · test {candidate.testObservationsFinal ?? '—'}</td><td className="py-2 pr-3">{metricLabel(candidate.testMetrics?.mae)}</td><td className="py-2 pr-3">{metricLabel(candidate.testMetrics?.mape, '%')}</td><td className="py-2 pr-3">{metricLabel(candidate.testMetrics?.rmse)}</td><td className="py-2">{candidate.selected ? 'Selected' : candidate.available ? 'Compared' : candidate.reason}</td></tr>)}</tbody>
+              </table>
+            </div>)}
+          </div>
+        </details>
+      </section> : null}
+
       {selectedRun && <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
           <div className="flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-xl bg-secondary text-primary"><AlertTriangle size={18} /></span><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Inventory planning</p><h3 className="mt-2 font-serif text-2xl font-extrabold">Restock recommendations</h3></div></div>
           <p className="mt-3 text-xs text-muted-foreground">Expected requirement is the sum of the forecast across the selected horizon, rounded up to whole units. Suggested additional stock is max(0, requirement − current stock); no safety buffer is added.</p>
-          <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead><tr className="border-b border-border font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground"><th className="pb-3 pr-4">Medicine</th><th className="pb-3 pr-4">Current stock</th><th className="pb-3 pr-4">Forecast demand</th><th className="pb-3 pr-4">Expected requirement</th><th className="pb-3 pr-4">Suggested additional</th><th className="pb-3">Recommendation</th></tr></thead><tbody>{selectedRun.medicines.map((medicine) => <tr key={medicine.medicineId} className="border-b border-border/60"><td className="py-3 pr-4 font-semibold">{medicine.medicineName}{medicine.inInventory === false && <span className="mt-1 block text-xs font-normal text-muted-foreground">Not currently in inventory</span>}</td><td className="py-3 pr-4">{medicine.inInventory === false ? 'Not currently in inventory' : medicine.currentStock ?? '—'}</td><td className="py-3 pr-4">{medicine.forecastDemand == null ? '—' : medicine.forecastDemand}</td><td className="py-3 pr-4">{medicine.expectedStockRequirement == null ? '—' : medicine.expectedStockRequirement}</td><td className="py-3 pr-4">{medicine.suggestedAdditionalStock == null ? '—' : medicine.suggestedAdditionalStock}</td><td className="py-3"><span className="font-medium">{medicine.recommendation}</span>{medicine.reason && <span className="mt-1 block max-w-64 text-xs text-muted-foreground">{medicine.reason}</span>}</td></tr>)}</tbody></table></div>
+          <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[1050px] text-left text-sm"><thead><tr className="border-b border-border font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground"><th className="pb-3 pr-4">Medicine</th><th className="pb-3 pr-4">Current stock</th><th className="pb-3 pr-4">Forecast demand</th><th className="pb-3 pr-4">Expected requirement</th><th className="pb-3 pr-4">Suggested additional</th><th className="pb-3 pr-4">Last recorded sales</th><th className="pb-3">Recommendation</th></tr></thead><tbody>{selectedRun.medicines.map((medicine) => <tr key={medicine.medicineId} className="border-b border-border/60"><td className="py-3 pr-4 font-semibold">{medicine.medicineName}{medicine.inInventory === false && <span className="mt-1 block text-xs font-normal text-muted-foreground">Not currently in inventory</span>}</td><td className="py-3 pr-4">{medicine.inInventory === false ? 'Not currently in inventory' : medicine.currentStock ?? '—'}</td><td className="py-3 pr-4">{medicine.forecastDemand == null ? '—' : medicine.forecastDemand}</td><td className="py-3 pr-4">{medicine.expectedStockRequirement == null ? '—' : medicine.expectedStockRequirement}</td><td className="py-3 pr-4">{medicine.suggestedAdditionalStock == null ? '—' : medicine.suggestedAdditionalStock}</td><td className="py-3 pr-4 text-xs">{medicine.lastObservedPeriod ? <span>Last sale {medicine.lastObservedPeriod}{(medicine.monthsSinceLastObservedSales ?? 0) > 3 ? ` · ${medicine.monthsSinceLastObservedSales} months before latest history` : ''}</span> : '—'}</td><td className="py-3"><span className="font-medium">{medicine.recommendation}</span>{medicine.reason && <span className="mt-1 block max-w-64 text-xs text-muted-foreground">{medicine.reason}</span>}</td></tr>)}</tbody></table></div>
         </section>}
 
       {!selectedRun && <section className="rounded-2xl border border-dashed border-border p-10 text-center">{loading ? <DatabaseLoading label="Loading forecast history" /> : error ? null : <><p className="font-serif text-xl font-bold">No forecast run yet.</p><p className="mt-2 text-sm text-muted-foreground">Forecasts require at least four monthly observations for one medicine, using delivered system orders, an uploaded workbook, or both.</p></>}</section>}
 
-      <section className="rounded-2xl border border-border bg-card p-6 sm:p-8"><div className="flex items-center justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Forecast history</p><h3 className="mt-2 font-serif text-2xl font-extrabold">Previous runs</h3></div><Button variant="outline" size="sm" disabled={loading} onClick={() => void refresh()}><RefreshCw size={14} /> Refresh</Button></div>{loading ? <DatabaseLoading className="mt-5" label="Loading saved forecasts" /> : error ? null : runs.length === 0 ? <p className="mt-5 text-center text-sm text-muted-foreground">No saved forecast executions.</p> : <div className="mt-5 space-y-2">{runs.map((run) => <button key={run.id} onClick={() => setSelectedRunId(run.id)} className={`flex w-full flex-wrap items-center justify-between gap-3 rounded-xl border p-4 text-left ${run.id === selectedRunId ? 'border-primary bg-secondary/50' : 'border-border hover:bg-secondary/30'}`}><span><span className="block text-sm font-semibold">{formatDate(run.createdAt)}</span><span className="mt-1 block text-xs text-muted-foreground">{run.historicalStartDate ?? '—'} to {run.historicalEndDate ?? '—'} · {run.forecastHorizon} month horizon · {run.forecastedMedicineCount} medicines</span></span><span className="text-xs text-muted-foreground">MAE {metricLabel(run.metrics?.mae)} · MAPE {metricLabel(run.metrics?.mape, '%')} · RMSE {metricLabel(run.metrics?.rmse)}</span></button>)}</div>}{!loading && !error && runs.some((run) => !run.metrics) && <p className="mt-3 text-xs text-muted-foreground">Metrics are available for runs created by this implementation. Earlier database runs have no stored evaluation metrics.</p>}</section>
+      <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+        <div className="flex items-center justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Forecast history</p><h3 className="mt-2 font-serif text-2xl font-extrabold">Previous runs</h3></div><Button variant="outline" size="sm" disabled={loading} onClick={() => void refresh()}><RefreshCw size={14} /> Refresh</Button></div>
+        {loading ? <DatabaseLoading className="mt-5" label="Loading saved forecasts" /> : error ? null : runs.length === 0 ? <p className="mt-5 text-center text-sm text-muted-foreground">No saved forecast executions.</p> : <div className="mt-5 space-y-2">
+          {runs.map((run) => <div key={run.id} className={`rounded-xl border p-4 ${run.id === selectedRunId ? 'border-primary bg-secondary/50' : 'border-border'}`}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <button type="button" onClick={() => setSelectedRunId(run.id)} aria-pressed={run.id === selectedRunId} className="min-w-48 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">{formatDate(run.createdAt)}<span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{run.forecastVersion === currentForecastVersion ? 'Current format' : 'Historical run'}</span></span>
+                <span className="mt-1 block text-xs text-muted-foreground">{run.historicalStartDate ?? '—'} to {run.historicalEndDate ?? '—'} · {run.forecastHorizon} month horizon · {run.forecastedMedicineCount} medicines</span>
+              </button>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <MetricWithInfo name="MAE" value={run.metrics?.mae} />
+                <MetricWithInfo name="MAPE" value={run.metrics?.mape} suffix="%" />
+                <MetricWithInfo name="RMSE" value={run.metrics?.rmse} />
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Model: {modelLabel(run.modelType)} · Training observations: {run.trainingObservationCount ?? '—'} · Test observations: {run.testObservationCount ?? '—'}</p>
+            <p className="mt-1 text-xs text-muted-foreground" title={run.evaluationDetails ?? undefined}>Evaluation: {evaluationLabel(run.evaluationMethod)} · {evaluationSummary(run.evaluationMethod)}</p>
+          </div>)}
+        </div>}
+        {!loading && !error && runs.some((run) => !run.metrics) && <p className="mt-3 text-xs text-muted-foreground">Historical runs without saved evaluation metrics or method details show unavailable values.</p>}
+      </section>
       {latestRun && <p className="text-xs text-muted-foreground">The current dashboard is showing {selectedRunId === latestRun.id ? 'the latest saved run' : 'a previous saved run'}.</p>}
     </div>
   </AppShell>;

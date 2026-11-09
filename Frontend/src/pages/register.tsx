@@ -22,10 +22,16 @@ export default function Register() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+    const normalizedName = fullName.trim();
+    const normalizedEmail = email.trim();
+    if (!normalizedName || normalizedName.length > 120) { setError('Enter your full name up to 120 characters.'); return; }
+    if (organizationName.trim().length > 160) { setError('Company or organization name must be 160 characters or fewer.'); return; }
+    if (normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) { setError('Enter a valid email address.'); return; }
+    if (password.length < 8 || password.length > 128) { setError('Password must be between 8 and 128 characters.'); return; }
     if (password !== confirmPassword) { setError('The passwords do not match.'); return; }
     setBusy(true);
     try {
-      await apiRequest('/register', { method: 'POST', body: JSON.stringify({ fullName, organizationName, email, password, emailRedirectTo: emailConfirmationRedirect() }) });
+      await apiRequest('/register', { method: 'POST', body: JSON.stringify({ fullName: normalizedName, organizationName: organizationName.trim(), email: normalizedEmail, password, emailRedirectTo: emailConfirmationRedirect() }) });
       setComplete(true);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to submit the registration.');
@@ -34,7 +40,7 @@ export default function Register() {
 
   return <main className="flex min-h-[100dvh] items-center justify-center bg-background p-5 sm:p-8">
     <section className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-9">
-      <Link href="/login" className="font-serif text-xl font-extrabold">oncophil</Link>
+      <Link href="/login" className="font-serif text-xl font-extrabold">Jacdash</Link>
       {complete ? <div className="mt-8 space-y-5" role="status"><h1 className="font-serif text-3xl font-extrabold">Registration submitted</h1><p className="text-sm leading-6 text-muted-foreground">Registration successful. Please check your email and click the confirmation link to verify your email address. Your account will still need administrator approval.</p><Button asChild><Link href="/login">Return to sign in</Link></Button></div> : <>
         <div className="mb-7 mt-8"><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">Account registration</p><h1 className="mt-3 font-serif text-3xl font-extrabold">Request access.</h1><p className="mt-2 text-sm text-muted-foreground">An administrator will review your details and assign your workspace.</p></div>
         <form className="space-y-4" onSubmit={(event) => void submit(event)}>

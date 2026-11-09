@@ -14,7 +14,8 @@ type SupabaseProfile = {
   id: string;
   full_name: string;
   avatar_url: string;
-  role: "admin" | "client";
+  role: "admin" | "client" | "manager" | "partnership_account";
+  approval_status?: "pending" | "approved" | "rejected";
 };
 
 type SupabaseErrorPayload = {
@@ -113,17 +114,17 @@ export async function verifyAdminAccess(
 
   if (!response.ok) return false;
   const authUser = (await readPayload(response)) as SupabaseAuthUser;
-  if (!authUser?.id) return false;
+  if (!authUser?.id || !authUser.email_confirmed_at || authUser.deleted_at || authUser.banned_until) return false;
 
   const profiles = await getProfilesById(authUser.id);
-  return profiles[0]?.role === "admin";
+  return profiles[0]?.role === "admin" && (profiles[0]?.approval_status ?? "approved") === "approved";
 }
 
 export async function getProfilesById(
   userId?: string,
 ): Promise<SupabaseProfile[]> {
   const query = new URLSearchParams({
-    select: "id,full_name,avatar_url,role",
+    select: "id,full_name,avatar_url,role,approval_status",
   });
   if (userId) query.set("id", `eq.${userId}`);
   return adminRequest<SupabaseProfile[]>(

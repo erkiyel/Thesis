@@ -46,7 +46,7 @@ export default function AuthConfirmation() {
   return (
     <main className="flex min-h-[100dvh] items-center justify-center bg-background p-5 sm:p-8">
       <section className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-9">
-        <Link href="/login" className="font-serif text-xl font-extrabold">oncophil</Link>
+        <Link href="/login" className="font-serif text-xl font-extrabold">Jacdash</Link>
         <div className="mt-8 space-y-4" role={state === 'checking' ? 'status' : 'alert'}>
           {state === 'checking' ? <>
             <h1 className="font-serif text-3xl font-extrabold">Confirming your email</h1>
