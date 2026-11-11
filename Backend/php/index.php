@@ -31,6 +31,7 @@ if (is_file($localEnv) && is_readable($localEnv)) {
 
 $configuredOrigins = getenv('ONCOPHIL_ALLOWED_ORIGINS');
 $allowedOrigins = [
+    'https://jacdash.pages.dev',
     'https://thesis-2lz262yk5-erkiyels-projects.vercel.app',
     'https://thesis-three-nu.vercel.app',
 ];
