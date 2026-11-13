@@ -594,12 +594,26 @@ def main() -> None:
     try:
         payload = json.load(sys.stdin)
         action = payload.get("action")
-        if action in {"revenue_preview", "revenue_forecast"}:
+        if action in {"revenue_preview", "revenue_forecast", "clean_sales_preview"}:
             from revenue_forecast import forecast as forecast_revenue
             from revenue_forecast import preview_excel as preview_revenue
+            from sales_report import preview_cleaned_workbook
 
             if action == "revenue_preview":
-                output = preview_revenue(payload.get("excelBase64", ""))
+                # Preserve the existing simple workbook importer, while using
+                # the verified transaction + monthly summary sheets when the
+                # richer cleaned JACDASH workbook is supplied.
+                import base64
+                import io
+                import openpyxl
+
+                workbook_bytes = base64.b64decode(payload.get("excelBase64", ""), validate=True)
+                workbook = openpyxl.load_workbook(io.BytesIO(workbook_bytes), read_only=True, data_only=True)
+                is_cleaned_workbook = {"Clean Sales Records", "Monthly Revenue"}.issubset(workbook.sheetnames)
+                workbook.close()
+                output = preview_cleaned_workbook(payload.get("excelBase64", "")) if is_cleaned_workbook else preview_revenue(payload.get("excelBase64", ""))
+            elif action == "clean_sales_preview":
+                output = preview_cleaned_workbook(payload.get("excelBase64", ""))
             else:
                 output = forecast_revenue(payload.get("records", []), int(payload.get("horizon", 3)), payload.get("systemRevenue", []))
         elif action == "preview":

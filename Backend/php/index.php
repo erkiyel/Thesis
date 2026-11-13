@@ -863,22 +863,52 @@ function route(string $method, string $path): void {
         if (!is_string($bytes)) fail(400, 'The uploaded workbook could not be read.');
         $preview = runForecastEngine(['action' => 'revenue_preview', 'excelBase64' => base64_encode($bytes)]);
         $importId = null;
-        if (($preview['invalidRows'] ?? 1) === 0 && !empty($preview['records'])) {
-            $savedImport = insertTable('forecast_imports', [
-                'uploaded_by' => $user['id'],
-                'file_name' => substr(basename((string)$file['name']), 0, 255),
-                'source_columns' => ['recognized' => $preview['columns'] ?? [], 'headers' => $preview['sourceHeaders'] ?? []],
-                'source_records' => $preview['sourceRecords'] ?? [],
-                'forecast_records' => $preview['records'],
-                'raw_row_count' => (int)($preview['rawRowCount'] ?? 0),
-                'valid_row_count' => (int)$preview['validRows'],
-                'invalid_row_count' => (int)$preview['invalidRows'],
-                'duplicate_row_count' => (int)($preview['duplicateRows'] ?? 0),
-            ], 'id,file_name,raw_row_count,valid_row_count,created_at,uploaded_by');
-            $importId = (string)$savedImport['id'];
+        $isCleanedWorkbook = array_key_exists('monthlyRevenue', $preview);
+        $forecastRecords = $isCleanedWorkbook ? ($preview['forecastRecords'] ?? []) : ($preview['records'] ?? []);
+        $canImport = ($preview['invalidRows'] ?? 1) === 0 && $forecastRecords !== [];
+        $sourceHash = hash_file('sha256', $file['tmp_name']);
+        if ($canImport && is_string($sourceHash)) {
+            $existingImport = oneTable('forecast_imports', 'source_sha256=eq.' . rawurlencode($sourceHash) . '&uploaded_by=eq.' . rawurlencode($user['id']));
+            if ($existingImport) {
+                $importId = (string)$existingImport['id'];
+                $preview['duplicateUpload'] = true;
+            } else {
+                $insert = [
+                    'uploaded_by' => $user['id'],
+                    'file_name' => substr(basename((string)$file['name']), 0, 255),
+                    'source_columns' => $isCleanedWorkbook
+                        ? ['kind' => 'clean_jacdash_sales_workbook', 'headers' => $preview['sourceHeaders'] ?? [], 'sheets' => $preview['sourceSheets'] ?? [], 'statusCounts' => $preview['statusCounts'] ?? []]
+                        : ['recognized' => $preview['columns'] ?? [], 'headers' => $preview['sourceHeaders'] ?? []],
+                    // Keep the source workbook's cell values, sheet names and
+                    // row numbers for audit; only Clean Sales Records rows
+                    // marked Included become forecastable transaction rows.
+                    'source_records' => $preview['sourceRecords'] ?? [],
+                    'transaction_records' => $preview['transactions'] ?? [],
+                    'forecast_records' => $forecastRecords,
+                    'monthly_revenue_records' => $preview['monthlyRevenue'] ?? [],
+                    'source_sha256' => $sourceHash,
+                    'raw_row_count' => (int)($preview['rawRowCount'] ?? 0),
+                    'valid_row_count' => (int)$preview['validRows'],
+                    'invalid_row_count' => (int)$preview['invalidRows'],
+                    'duplicate_row_count' => (int)($preview['duplicateRows'] ?? 0),
+                ];
+                try {
+                    $savedImport = insertTable('forecast_imports', $insert, 'id,file_name,raw_row_count,valid_row_count,created_at,uploaded_by');
+                    $importId = (string)$savedImport['id'];
+                } catch (ApiException $error) {
+                    // The unique source hash is the final guard against two
+                    // concurrent uploads of the same workbook.
+                    if (!preg_match('/duplicate key|23505/i', $error->getMessage())) throw $error;
+                    $existingImport = oneTable('forecast_imports', 'source_sha256=eq.' . rawurlencode($sourceHash) . '&uploaded_by=eq.' . rawurlencode($user['id']));
+                    if (!$existingImport) throw $error;
+                    $importId = (string)$existingImport['id'];
+                    $preview['duplicateUpload'] = true;
+                }
+            }
         }
         unset($preview['records']);
         unset($preview['sourceRecords']);
+        unset($preview['transactions']);
         respond(['valid' => $importId !== null, 'importId' => $importId, ...$preview]);
     }
     if ($path === '/admin/forecasts/run' && $method === 'POST') {
@@ -914,6 +944,7 @@ function route(string $method, string $path): void {
         $databaseResults = array_map(static fn(array $row): array => [
             'forecast_run_id' => $run['id'],
             'forecast_period' => (string)($row['period'] ?? '') . '-01',
+            'predicted_quantity' => null,
             'predicted_revenue' => (float)$row['forecastRevenue'],
         ], $result['forecastMonthlyRevenue']);
         if ($databaseResults) {

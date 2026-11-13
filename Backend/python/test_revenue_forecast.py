@@ -65,15 +65,54 @@ class RevenueForecastTests(unittest.TestCase):
         self.assertAlmostEqual(january[1], 0.0, places=10)
         self.assertAlmostEqual(february[1], np.sin(2 * np.pi / 12), places=10)
 
-    def test_missing_months_are_not_accepted_as_consecutive_training_data(self):
+    def test_missing_months_are_not_filled_and_only_the_consecutive_tail_trains(self):
         records = []
         for index in range(12):
             if index == 7:
                 continue
             ordinal = revenue.month_number("2025-01") + index
             records.append({"date": revenue.month_label(ordinal) + "-01", "salesAmount": 100 + index})
-        with self.assertRaisesRegex(ValueError, "at least 12 are required"):
-            revenue.forecast(records, 3)
+        class TestRegressor:
+            def fit(self, _x, y):
+                self.mean_ = float(np.mean(y))
+                return self
+
+            def predict(self, x):
+                return np.full(len(x), self.mean_)
+
+        with patch.object(revenue, "make_model", return_value=TestRegressor()):
+            result = revenue.forecast(records, 3)
+        self.assertEqual(result["historicalStartDate"], "2025-09-01")
+        self.assertEqual(result["historicalEndDate"], "2025-12-01")
+        self.assertEqual(result["trainingObservationCount"], 1)
+        self.assertEqual(result["testObservationCount"], 0)
+        self.assertIsNone(result["metrics"]["mae"])
+        self.assertIsNone(result["metrics"]["mape"])
+        self.assertIsNone(result["metrics"]["rmse"])
+        self.assertEqual(len(result["forecastMonthlyRevenue"]), 3)
+        self.assertTrue(result["dataLimitationWarning"])
+
+    def test_four_consecutive_months_train_without_fabricating_a_test_fold(self):
+        class TestRegressor:
+            def fit(self, _x, y):
+                self.mean_ = float(np.mean(y))
+                return self
+
+            def predict(self, x):
+                return np.full(len(x), self.mean_)
+
+        start = revenue.month_number("2026-01")
+        records = [
+            {"date": revenue.month_label(start + index) + "-01", "salesAmount": 1000 + 50 * index}
+            for index in range(4)
+        ]
+        with patch.object(revenue, "make_model", return_value=TestRegressor()):
+            result = revenue.forecast(records, 3)
+        self.assertEqual(result["minimumRequiredMonths"], 4)
+        self.assertEqual(result["trainingObservationCount"], 1)
+        self.assertEqual(result["testObservationCount"], 0)
+        self.assertTrue(all(item["forecastRevenue"] >= 0 for item in result["forecastMonthlyRevenue"]))
+        self.assertTrue(all(model["metrics"]["mae"] is None for model in result["modelComparisons"]))
 
     def test_walk_forward_evaluates_all_models_on_same_three_month_period(self):
         class TestRegressor:
@@ -99,8 +138,8 @@ class RevenueForecastTests(unittest.TestCase):
             result = revenue.forecast(records, 3)
         self.assertEqual(result["modelType"], "xgboost")
         self.assertEqual(result["evaluationMethod"], "chronological_walk_forward")
-        self.assertEqual(result["metrics"]["testObservations"], 9)
-        self.assertEqual({row["metrics"]["testObservations"] for row in result["modelComparisons"]}, {9})
+        self.assertEqual(result["metrics"]["testObservations"], 12)
+        self.assertEqual({row["metrics"]["testObservations"] for row in result["modelComparisons"]}, {12})
         self.assertEqual({(row["evaluationPeriodStart"], row["evaluationPeriodEnd"]) for row in result["modelComparisons"]}, {(result["evaluationPeriodStart"], result["evaluationPeriodEnd"])})
         self.assertEqual(len(result["forecastMonthlyRevenue"]), 3)
 

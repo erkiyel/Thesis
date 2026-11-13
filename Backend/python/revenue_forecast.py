@@ -6,6 +6,7 @@ import base64
 import hashlib
 import io
 import math
+import random
 import unicodedata
 from collections import defaultdict
 from datetime import date, datetime
@@ -14,7 +15,7 @@ import numpy as np
 import openpyxl
 
 MAX_ROWS = 50_000
-MIN_MONTHS = 12
+MIN_MONTHS = 4
 HORIZONS = {1, 3, 6, 12}
 SEED = 42
 ALIASES = {
@@ -221,26 +222,77 @@ def make_model(name: str):
         except ImportError as exc:
             raise RuntimeError("XGBoost is not installed in the PHP forecast Python environment. Install Backend/python/requirements.txt.") from exc
         return XGBRegressor(
-            objective="reg:squarederror", n_estimators=60, max_depth=2,
-            learning_rate=0.04, min_child_weight=2, subsample=1.0,
-            colsample_bytree=1.0, reg_lambda=3.0, reg_alpha=0.0,
+            # A small, regularized tree ensemble is intentional: at the
+            # four-month minimum the lag features produce only one training
+            # sample. No rows are duplicated to make the estimator appear
+            # better supported.
+            objective="reg:squarederror", n_estimators=30, max_depth=1,
+            learning_rate=0.03, min_child_weight=1, subsample=1.0,
+            colsample_bytree=1.0, reg_lambda=10.0, reg_alpha=0.0,
             random_state=SEED, n_jobs=1, tree_method="hist", verbosity=0,
         )
-    if name == "random_forest":
-        try:
-            from sklearn.ensemble import RandomForestRegressor
-        except ImportError as exc:
-            raise RuntimeError("scikit-learn is not installed in the PHP forecast Python environment. Install Backend/python/requirements.txt.") from exc
-        return RandomForestRegressor(n_estimators=100, max_depth=3, min_samples_leaf=2, random_state=SEED, n_jobs=1)
     if name == "linear_regression":
         return "linear_regression"
     return name
 
 
+def random_forest_predict(x: np.ndarray, y: np.ndarray, next_x: np.ndarray) -> float:
+    """Small deterministic CART forest for the Random Forest baseline.
+
+    This avoids scikit-learn's blocked native extensions in the Windows runtime
+    while retaining bootstrap aggregation, random feature subsets, squared
+    error splits, and mean regression leaves. At tiny sample sizes trees remain
+    shallow rather than creating artificial observations.
+    """
+    rng = random.Random(SEED)
+    feature_count = x.shape[1]
+    feature_subset_size = max(1, int(math.sqrt(feature_count)))
+
+    def grow(indices: list[int], depth: int, tree_rng: random.Random):
+        leaf_value = float(np.mean(y[indices])) if indices else 0.0
+        if depth >= 3 or len(indices) < 4:
+            return (leaf_value,)
+        features = tree_rng.sample(range(feature_count), feature_subset_size)
+        best: tuple[float, int, float, list[int], list[int]] | None = None
+        for feature in features:
+            ordered = sorted({float(x[index, feature]) for index in indices})
+            for lower, upper in zip(ordered, ordered[1:]):
+                threshold = (lower + upper) / 2
+                left = [index for index in indices if x[index, feature] <= threshold]
+                right = [index for index in indices if x[index, feature] > threshold]
+                if len(left) < 2 or len(right) < 2:
+                    continue
+                left_mean = float(np.mean(y[left]))
+                right_mean = float(np.mean(y[right]))
+                error = float(np.sum((y[left] - left_mean) ** 2) + np.sum((y[right] - right_mean) ** 2))
+                if best is None or error < best[0]:
+                    best = (error, feature, threshold, left, right)
+        if best is None:
+            return (leaf_value,)
+        _, feature, threshold, left, right = best
+        return (feature, threshold, grow(left, depth + 1, tree_rng), grow(right, depth + 1, tree_rng))
+
+    def predict_tree(node, row) -> float:
+        if len(node) == 1:
+            return node[0]
+        feature, threshold, left, right = node
+        return predict_tree(left if row[feature] <= threshold else right, row)
+
+    sample_count = len(y)
+    if sample_count == 0:
+        raise ValueError("Random Forest needs at least one lagged training row.")
+    predictions: list[float] = []
+    for _ in range(100):
+        bootstrap = [rng.randrange(sample_count) for _ in range(sample_count)]
+        tree = grow(bootstrap, 0, rng)
+        predictions.append(predict_tree(tree, next_x[0]))
+    return float(np.mean(predictions))
+
+
 def predict_recursive(name: str, observed: list[float], horizon: int, start_ordinal: int) -> list[float]:
     values = list(observed)
-    if len(values) < 9:
-        raise ValueError("At least 9 consecutive monthly revenues are needed to train the comparison models.")
+    if len(values) < MIN_MONTHS:
+        raise ValueError(f"At least {MIN_MONTHS} consecutive monthly revenues are required for training.")
     for target_index in range(len(values), len(values) + horizon):
         if name in {"naive", "moving_average_3"}:
             prediction = values[-1] if name == "naive" else sum(values[-3:]) / 3
@@ -248,12 +300,14 @@ def predict_recursive(name: str, observed: list[float], horizon: int, start_ordi
             x = np.asarray([feature_row(index, values, start_ordinal + index) for index in range(3, len(values))], dtype=float)
             y = np.asarray(values[3:], dtype=float)
             next_x = np.asarray([feature_row(target_index, values, start_ordinal + target_index)], dtype=float)
-            if len(y) < 6:
-                raise ValueError("At least 6 lagged training rows are required for forecasting.")
+            if len(y) < 1:
+                raise ValueError("At least one valid three-month-lag training row is required for forecasting.")
             if name == "linear_regression":
                 design = np.column_stack([np.ones(len(x)), x])
                 coefficients, *_ = np.linalg.lstsq(design, y, rcond=None)
                 prediction = float((np.column_stack([np.ones(1), next_x]) @ coefficients)[0])
+            elif name == "random_forest":
+                prediction = random_forest_predict(x, y, next_x)
             else:
                 model = make_model(name)
                 model.fit(x, y)
@@ -304,11 +358,11 @@ def forecast(records: list[dict], horizon: int, system_records: list[dict] | Non
     if len(values) < MIN_MONTHS:
         raise ValueError(f"Insufficient consecutive monthly revenue history: {len(values)} observed months; at least {MIN_MONTHS} are required. Missing months are not treated as zero.")
 
-    # Non-overlapping walk-forward folds use the exact requested horizon for all
-    # five candidates. Every fold trains only on observations before its origin.
-    origins = list(range(8, len(values) - horizon, horizon))
-    if not origins:
-        raise ValueError("There is not enough history for a separate walk-forward test at this forecast horizon.")
+    # A final model can train from four consecutive actuals (one three-lag
+    # sample). Evaluation has a separate data requirement: reserve only folds
+    # with at least four earlier observations and a full requested horizon.
+    # If none fit, keep the real forecast and report null metrics.
+    origins = list(range(MIN_MONTHS - 1, len(values) - horizon, horizon))
     comparisons = []
     for model_name in MODEL_NAMES:
         actual_all: list[float] = []
@@ -342,7 +396,7 @@ def forecast(records: list[dict], horizon: int, system_records: list[dict] | Non
         "predictionTarget": "monthly_sales_revenue_php",
         "modelType": "xgboost",
         "modelLabel": MODEL_NAMES["xgboost"],
-        "modelConfig": {"objective": "reg:squarederror", "nEstimators": 60, "maxDepth": 2, "learningRate": 0.04, "minChildWeight": 2, "regLambda": 3.0, "seed": SEED, "treeMethod": "hist"},
+        "modelConfig": {"objective": "reg:squarederror", "nEstimators": 30, "maxDepth": 1, "learningRate": 0.03, "minChildWeight": 1, "regLambda": 10.0, "seed": SEED, "treeMethod": "hist"},
         "historicalStartDate": training_months[0] + "-01",
         "historicalEndDate": training_months[-1] + "-01",
         "forecastHorizon": horizon,
@@ -350,12 +404,18 @@ def forecast(records: list[dict], horizon: int, system_records: list[dict] | Non
         "trainingObservationCount": max(0, len(values) - 3),
         "testObservationCount": xgb_comparison["metrics"]["testObservations"],
         "evaluationMethod": "chronological_walk_forward",
+        "evaluationAvailable": bool(origins),
         "evaluationPeriodStart": xgb_comparison["evaluationPeriodStart"],
         "evaluationPeriodEnd": xgb_comparison["evaluationPeriodEnd"],
         "metrics": xgb_comparison["metrics"],
         "modelComparisons": comparisons,
         "actualMonthlyRevenue": actual_chart,
         "forecastMonthlyRevenue": forecast_chart,
+        "dataLimitationWarning": (
+            f"Limited history: this forecast uses {len(values)} consecutive monthly observations and "
+            f"{max(0, len(values) - 3)} lagged training row(s). Forecast reliability may be reduced."
+            + (" No separate chronological test is available for this horizon, so MAE, MAPE, and RMSE are not reported." if not origins else "")
+        ) if len(values) < 12 or not origins else None,
         "missingMonths": missing,
         "overlapMonthsUsingImportedOnly": sorted(overlaps),
         "overlapSystemMonthsExcluded": len(overlaps),
