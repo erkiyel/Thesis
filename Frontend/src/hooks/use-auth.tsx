@@ -19,6 +19,7 @@ type AuthValue = {
   session: AuthSession | null;
   user: AuthSession['user'] | null;
   isLoading: boolean;
+  loginEventId: number;
   error: string;
   setError: (value: string) => void;
   login: (email: string, password: string) => Promise<AuthSession>;
@@ -32,6 +33,7 @@ function useAuthState(): AuthValue {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [loginEventId, setLoginEventId] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -67,6 +69,7 @@ function useAuthState(): AuthValue {
     setError('');
     const next = await signIn(email, password);
     setSession(next);
+    setLoginEventId((value) => value + 1);
     return next;
   }, []);
 
@@ -79,7 +82,7 @@ function useAuthState(): AuthValue {
     setSession(await getSession());
   }, []);
 
-  return { session, user: session?.user ?? null, isLoading, error, setError, login, logout, refreshUser };
+  return { session, user: session?.user ?? null, isLoading, loginEventId, error, setError, login, logout, refreshUser };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

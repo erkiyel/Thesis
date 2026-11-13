@@ -19,8 +19,9 @@ import { Label } from '@/components/ui/label';
 import { Link } from 'wouter';
 import { apiRequest, formatCurrency, formatDate, type Medicine, type Order } from '@/lib/api';
 import { isCompletedOrder } from '@/lib/order-utils';
+import { classifyInventory, DEFAULT_INVENTORY_ALERT_SETTINGS, getInventoryAlertSettings, INVENTORY_ALERT_SETTINGS_KEY, type InventoryAlertSettings } from '@/lib/inventory-alerts';
 
-const ForecastDashboard = lazy(() => import('@/pages/forecast-dashboard'));
+const ForecastDashboard = lazy(() => import('@/pages/revenue-forecast-dashboard'));
 
 function ErrorNotice({ message }: { message: string }) {
   return message ? <div className="rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm text-destructive" role="alert">{message}</div> : null;
@@ -95,7 +96,7 @@ export function AdminDashboardPage({ view = 'home', role = 'admin' }: { view?: A
 }
 
 function AdminInventory({ medicines, loading, loadError, onChanged, readOnly = false }: { medicines: Medicine[]; loading: boolean; loadError: string; onChanged: () => Promise<void>; readOnly?: boolean }) {
-  const emptyForm = { name: '', price: '', stockQuantity: '0', isAvailable: true };
+  const emptyForm = { name: '', price: '', stockQuantity: '0', expirationDate: '', isAvailable: true };
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [image, setImage] = useState<File | null>(null);
@@ -104,10 +105,25 @@ function AdminInventory({ medicines, loading, loadError, onChanged, readOnly = f
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Medicine | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [alertSettings, setAlertSettings] = useState<InventoryAlertSettings>(() => getInventoryAlertSettings());
+  const [inventoryFilter, setInventoryFilter] = useState('all');
+  const classifiedAlerts = useMemo(() => classifyInventory(medicines, alertSettings), [medicines, alertSettings]);
+  const alertsById = useMemo(() => new Map(classifiedAlerts.map((entry) => [entry.medicine.id, entry])), [classifiedAlerts]);
+  const filteredMedicines = medicines.filter((medicine) => {
+    if (readOnly) return true;
+    if (inventoryFilter === 'all') return true;
+    const alert = alertsById.get(medicine.id);
+    return inventoryFilter === alert?.stockClass || inventoryFilter === alert?.expiryClass;
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(INVENTORY_ALERT_SETTINGS_KEY, JSON.stringify(alertSettings)); } catch {}
+    window.dispatchEvent(new Event('jacdash-inventory-alert-settings-updated'));
+  }, [alertSettings]);
 
   function edit(medicine: Medicine) {
     setEditingId(medicine.id);
-    setForm({ name: medicine.name, price: String(medicine.price), stockQuantity: String(medicine.stockQuantity), isAvailable: medicine.isAvailable });
+    setForm({ name: medicine.name, price: String(medicine.price), stockQuantity: String(medicine.stockQuantity), expirationDate: medicine.expirationDate?.slice(0, 10) ?? '', isAvailable: medicine.isAvailable });
     setMessage('');
     setError('');
   }
@@ -135,6 +151,7 @@ function AdminInventory({ medicines, loading, loadError, onChanged, readOnly = f
       setMessage(editingId ? 'Medicine updated.' : 'Medicine added to inventory.');
       reset();
       await onChanged();
+      window.dispatchEvent(new Event('jacdash-inventory-updated'));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to save the medicine.');
     } finally { setSaving(false); }
@@ -151,6 +168,7 @@ function AdminInventory({ medicines, loading, loadError, onChanged, readOnly = f
       setDeleteTarget(null);
       setMessage(`${target.name} was deleted.`);
       await onChanged();
+      window.dispatchEvent(new Event('jacdash-inventory-updated'));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to delete this medicine.');
     } finally {
@@ -161,11 +179,17 @@ function AdminInventory({ medicines, loading, loadError, onChanged, readOnly = f
   return (
     <section className="rounded-2xl border border-border bg-card p-6 sm:p-8" id="inventory">
       <div className="flex items-start gap-4"><span className="flex size-10 items-center justify-center rounded-xl bg-secondary text-primary"><Stethoscope size={18} /></span><div><h3 className="font-serif text-2xl font-extrabold">Medicine inventory</h3></div></div>
+      {!readOnly && <div className="mt-5 grid gap-3 rounded-lg border border-border bg-secondary/20 p-4 sm:grid-cols-2">
+        <label className="grid gap-1 text-xs font-medium">Low-stock threshold (units)<Input type="number" min="0" max="1000000" step="1" value={alertSettings.lowStockThreshold} onChange={(event) => setAlertSettings((current) => ({ ...current, lowStockThreshold: Math.max(0, Math.min(1000000, Math.floor(Number(event.target.value) || 0))) }))} /></label>
+        <label className="grid gap-1 text-xs font-medium">Expiration warning window (days)<Input type="number" min="1" max="3650" step="1" value={alertSettings.expiryWarningDays} onChange={(event) => setAlertSettings((current) => ({ ...current, expiryWarningDays: Math.max(1, Math.min(3650, Math.floor(Number(event.target.value) || 1))) }))} /></label>
+        <p className="text-xs text-muted-foreground sm:col-span-2">Defaults: {DEFAULT_INVENTORY_ALERT_SETTINGS.lowStockThreshold} units and {DEFAULT_INVENTORY_ALERT_SETTINGS.expiryWarningDays} days. These preferences are saved in this browser. Expired stock is blocked from new orders.</p>
+      </div>}
       <div className={`mt-8 grid gap-8 ${readOnly ? '' : 'xl:grid-cols-[340px_minmax(0,1fr)]'}`}>
         {!readOnly && <form onSubmit={submit} className="space-y-4 rounded-xl border border-border bg-secondary/30 p-5">
           <div className="flex items-center justify-between"><p className="font-semibold">{editingId ? 'Edit medicine' : 'Add medicine'}</p>{editingId && <Button type="button" variant="ghost" size="sm" onClick={reset}>Cancel</Button>}</div>
           <div className="space-y-2"><Label htmlFor="medicine-name">Medicine name</Label><Input id="medicine-name" required maxLength={160} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Amoxicillin 500mg" /></div>
           <div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="medicine-price">Price (PHP)</Label><Input id="medicine-price" required type="number" min="0" max="1000000000" step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} /></div><div className="space-y-2"><Label htmlFor="medicine-stock">Stock</Label><Input id="medicine-stock" required type="number" min="0" max="1000000000" step="1" value={form.stockQuantity} onChange={(e) => setForm({ ...form, stockQuantity: e.target.value })} /></div></div>
+          <div className="space-y-2"><Label htmlFor="medicine-expiration">Expiration date (optional)</Label><Input id="medicine-expiration" type="date" value={form.expirationDate} onChange={(e) => setForm({ ...form, expirationDate: e.target.value })} /></div>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isAvailable} onChange={(e) => setForm({ ...form, isAvailable: e.target.checked })} /> Available for clients</label>
           <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground"><ImagePlus size={16} />{image ? image.name : editingId ? 'Change product image (optional)' : 'Upload product image (required)'}<input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" onChange={(e) => setImage(e.target.files?.[0] ?? null)} /></label>
           {!editingId && <p className="text-xs text-muted-foreground">A product image is required to add a medicine. Use JPG, PNG, or WebP, up to 5 MB.</p>}
@@ -173,7 +197,11 @@ function AdminInventory({ medicines, loading, loadError, onChanged, readOnly = f
           <Button type="submit" disabled={saving} className="w-full">{saving ? 'Saving…' : editingId ? 'Save changes' : 'Add medicine'} <Plus size={16} /></Button>
         </form>}
         <div className="overflow-x-auto">
-          {loading ? <DatabaseLoading label="Loading inventory" /> : loadError ? null : medicines.length === 0 ? <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No medicines have been added.</div> : <table className="w-full min-w-[720px] text-left text-sm"><thead><tr className="border-b border-border font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"><th className="pb-3 pr-3">Image</th><th className="pb-3 pr-3">Medicine</th><th className="pb-3 pr-3">Price</th><th className="pb-3 pr-3">Stock</th><th className="pb-3 pr-3">Availability</th>{readOnly && <th className="pb-3 pr-3">Expiration</th>}<th /></tr></thead><tbody>{medicines.map((medicine) => <tr key={medicine.id} className="border-b border-border/70 last:border-0"><td className="py-3 pr-3"><MedicineImage imageUrl={medicine.imageUrl} name={medicine.name} className="size-16" /></td><td className="py-4 pr-3 font-semibold">{medicine.name}</td><td className="py-4 pr-3">{formatCurrency(medicine.price)}</td><td className="py-4 pr-3">{medicine.stockQuantity}</td><td className="py-4 pr-3"><StatusPill value={medicine.isAvailable && medicine.stockQuantity > 0 ? 'available' : 'unavailable'} /></td>{readOnly && <td className="py-4 pr-3">{medicine.expirationDate ? formatDate(medicine.expirationDate) : 'Not recorded'}</td>}<td className="py-4 text-right">{!readOnly && <><Button variant="ghost" size="sm" onClick={() => edit(medicine)}><Pencil size={15} /> Edit</Button><Button variant="ghost" size="sm" disabled={deletingId === medicine.id} onClick={() => setDeleteTarget(medicine)}><Trash2 size={15} /> {deletingId === medicine.id ? 'Deleting…' : 'Delete'}</Button></>}</td></tr>)}</tbody></table>}
+          {!readOnly && <div className="mb-3 flex justify-end"><select aria-label="Filter inventory warnings" value={inventoryFilter} onChange={(event) => setInventoryFilter(event.target.value)} className="h-9 rounded-md border border-input bg-background px-3 text-xs"><option value="all">All medicines</option><option value="low_stock">Low stock</option><option value="out_of_stock">Out of stock</option><option value="expiring_soon">Expiring soon</option><option value="expired">Expired</option></select></div>}
+          {loading ? <DatabaseLoading label="Loading inventory" /> : loadError ? null : medicines.length === 0 ? <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No medicines have been added.</div> : filteredMedicines.length === 0 ? <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No medicines match this filter.</div> : <table className="w-full min-w-[820px] text-left text-sm"><thead><tr className="border-b border-border font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground"><th className="pb-3 pr-3">Image</th><th className="pb-3 pr-3">Medicine</th><th className="pb-3 pr-3">Price</th><th className="pb-3 pr-3">Stock</th><th className="pb-3 pr-3">Availability</th><th className="pb-3 pr-3">Expiration</th><th /></tr></thead><tbody>{filteredMedicines.map((medicine) => {
+            const alert = readOnly ? undefined : alertsById.get(medicine.id);
+            return <tr key={medicine.id} className="border-b border-border/70 last:border-0"><td className="py-3 pr-3"><MedicineImage imageUrl={medicine.imageUrl} name={medicine.name} className="size-16" /></td><td className="py-4 pr-3 font-semibold">{medicine.name}<div className="mt-1 flex flex-wrap gap-1">{alert?.stockClass === 'out_of_stock' && <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] text-destructive">Out of stock</span>}{alert?.stockClass === 'low_stock' && <span className="rounded-full bg-orange-500/10 px-2 py-0.5 text-[10px] text-orange-700">Low stock</span>}{alert?.expiryClass === 'expired' && <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] text-destructive">Expired</span>}{alert?.expiryClass === 'expiring_soon' && <span className="rounded-full bg-orange-500/10 px-2 py-0.5 text-[10px] text-orange-700">Expiring soon</span>}</div></td><td className="py-4 pr-3">{formatCurrency(medicine.price)}</td><td className="py-4 pr-3">{medicine.stockQuantity}</td><td className="py-4 pr-3"><StatusPill value={medicine.isAvailable && medicine.stockQuantity > 0 ? 'available' : 'unavailable'} /></td><td className="py-4 pr-3">{medicine.expirationDate ? <span>{formatDate(medicine.expirationDate)}{alert?.daysUntilExpiry != null && <small className="mt-1 block text-muted-foreground">{alert.daysUntilExpiry < 0 ? `${Math.abs(alert.daysUntilExpiry)} days expired` : `${alert.daysUntilExpiry} days left`}</small>}</span> : 'Not recorded'}</td><td className="py-4 text-right">{!readOnly && <><Button variant="ghost" size="sm" onClick={() => edit(medicine)}><Pencil size={15} /> Edit</Button><Button variant="ghost" size="sm" disabled={deletingId === medicine.id} onClick={() => setDeleteTarget(medicine)}><Trash2 size={15} /> {deletingId === medicine.id ? 'Deleting…' : 'Delete'}</Button></>}</td></tr>;
+          })}</tbody></table>}
         </div>
       </div>
       {!readOnly && <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open && deletingId === null) setDeleteTarget(null); }}>

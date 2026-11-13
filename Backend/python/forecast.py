@@ -594,7 +594,15 @@ def main() -> None:
     try:
         payload = json.load(sys.stdin)
         action = payload.get("action")
-        if action == "preview":
+        if action in {"revenue_preview", "revenue_forecast"}:
+            from revenue_forecast import forecast as forecast_revenue
+            from revenue_forecast import preview_excel as preview_revenue
+
+            if action == "revenue_preview":
+                output = preview_revenue(payload.get("excelBase64", ""))
+            else:
+                output = forecast_revenue(payload.get("records", []), int(payload.get("horizon", 3)), payload.get("systemRevenue", []))
+        elif action == "preview":
             output = parse_excel(payload.get("excelBase64", ""))
         elif action == "forecast":
             output = forecast(payload)

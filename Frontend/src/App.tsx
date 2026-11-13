@@ -13,6 +13,7 @@ import { FoundationHome, ProfilePage } from '@/pages/foundation';
 import UserManagement from '@/pages/user-management';
 import { AdminDashboardPage, ClientCataloguePage } from '@/pages/operations';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
+import { AdminInventoryAlertHost } from '@/components/inventory-alerts';
 import { getRole } from '@/lib/supabase';
 import {
   Route,
@@ -94,6 +95,8 @@ function Router() {
     // Keep a shared shell (sidebar, navbar) outside the boundary so it
     // survives a page crash.
     <RoutedErrorBoundary>
+      <>
+      <AdminInventoryAlertHost />
       <Switch>
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
@@ -145,6 +148,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route component={NotFound} />
       </Switch>
+      </>
     </RoutedErrorBoundary>
   );
 }

@@ -9,6 +9,7 @@ RUN apt-get update \
         ca-certificates \
         gosu \
         libcurl4-openssl-dev \
+        libgomp1 \
         libonig-dev \
         python3 \
         python3-pip \

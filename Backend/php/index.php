@@ -578,6 +578,24 @@ function completedSystemSales(): array {
     return $sales;
 }
 
+function completedSystemRevenue(): array {
+    $orders = selectAllRows('orders', 'id,order_status,total_amount,created_at', 'order_status=eq.delivered&order=created_at.asc');
+    if (!$orders) return [];
+    $byId = [];
+    foreach ($orders as $order) $byId[(string)$order['id']] = $order;
+    $payments = [];
+    foreach (array_chunk(array_keys($byId), 100) as $orderIds) {
+        $ids = implode(',', array_map(static fn(string $id): string => rawurlencode($id), $orderIds));
+        array_push($payments, ...selectAllRows('payments', 'order_id,payment_status,created_at', 'order_id=in.(' . $ids . ')&order=created_at.desc'));
+    }
+    $accepted = paidAndDeliveredOrders(array_values($byId), $payments);
+    return array_map(static fn(array $order): array => [
+        'date' => $order['created_at'] ?? null,
+        'salesAmount' => money($order['total_amount'] ?? 0),
+        'source' => 'completed_system_order',
+    ], $accepted);
+}
+
 function createClientAccount(array $input): array {
     $account = validateAccountInput([
         'fullName' => $input['fullName'] ?? null,
@@ -694,6 +712,7 @@ function route(string $method, string $path): void {
         requireAdmin();
         $input = $_POST ?: jsonBody();
         $name = cleanText($input['name'] ?? '', 'Medicine name', 160, true);
+        $expirationDate = validDateOnly($input['expirationDate'] ?? null, 'Expiration date');
         $rawAvailable = $input['isAvailable'] ?? true;
         if (!in_array($rawAvailable, [true, false, 1, 0, '1', '0', 'true', 'false', 'on'], true)) fail(400, 'Availability must be true or false.');
         $data = [
@@ -701,6 +720,7 @@ function route(string $method, string $path): void {
             'price' => nonnegativePrice($input['price'] ?? null),
             'stock_quantity' => nonnegativeInteger($input['stockQuantity'] ?? null, 'Stock quantity'),
             'is_available' => filter_var($rawAvailable, FILTER_VALIDATE_BOOLEAN),
+            'expiration_date' => $expirationDate,
         ];
         $existing = null;
         if ($method === 'PUT') {
@@ -721,6 +741,7 @@ function route(string $method, string $path): void {
         $existing = oneTable('medicines', 'id=eq.' . rawurlencode($medicineId));
         if (!$existing) fail(404, 'Medicine not found.');
         $name = cleanText($input['name'] ?? $existing['name'] ?? '', 'Medicine name', 160, true);
+        $expirationDate = validDateOnly($input['expirationDate'] ?? $existing['expiration_date'] ?? null, 'Expiration date');
         $rawAvailable = $input['isAvailable'] ?? ($existing['is_available'] ?? true);
         if (!in_array($rawAvailable, [true, false, 1, 0, '1', '0', 'true', 'false', 'on'], true)) fail(400, 'Availability must be true or false.');
         $data = [
@@ -728,6 +749,7 @@ function route(string $method, string $path): void {
             'price' => nonnegativePrice($input['price'] ?? $existing['price'] ?? null),
             'stock_quantity' => nonnegativeInteger($input['stockQuantity'] ?? $existing['stock_quantity'] ?? null, 'Stock quantity'),
             'is_available' => filter_var($rawAvailable, FILTER_VALIDATE_BOOLEAN),
+            'expiration_date' => $expirationDate,
             'image_url' => imageUpload($existing['image_url'] ?? null),
         ];
         respond(medicineOutput(updateTable('medicines', 'id=eq.' . rawurlencode($medicineId), $data)));
@@ -775,6 +797,9 @@ function route(string $method, string $path): void {
             $quantity = nonnegativeInteger($item['quantity'] ?? null, 'Order quantity', true);
             $medicine = oneTable('medicines', 'id=eq.' . rawurlencode($medicineId) . '&is_available=eq.true');
             if (!$medicine || (int)($medicine['stock_quantity'] ?? 0) < $quantity) fail(400, 'One or more selected medicines are no longer available in that quantity.');
+            $todayManila = (new DateTimeImmutable('now', new DateTimeZone('Asia/Manila')))->format('Y-m-d');
+            $expirationDate = validDateOnly($medicine['expiration_date'] ?? null, 'Medicine expiration date');
+            if ($expirationDate !== null && $expirationDate < $todayManila) fail(400, 'Expired medicines cannot be used to fulfill an order. Remove the expired item and try again.');
             $unitPrice = money($medicine['price'] ?? 0); $subtotal = money($unitPrice * $quantity); $total += $subtotal;
             $normalized[] = ['medicine' => $medicine, 'quantity' => $quantity, 'subtotal' => $subtotal];
         }
@@ -836,17 +861,24 @@ function route(string $method, string $path): void {
         if (($file['size'] ?? 0) < 1 || ($file['size'] ?? 0) > 10 * 1024 * 1024) fail(400, 'Excel files must be 10 MB or smaller.');
         $bytes = file_get_contents($file['tmp_name']);
         if (!is_string($bytes)) fail(400, 'The uploaded workbook could not be read.');
-        $preview = runForecastEngine(['action' => 'preview', 'excelBase64' => base64_encode($bytes)]);
+        $preview = runForecastEngine(['action' => 'revenue_preview', 'excelBase64' => base64_encode($bytes)]);
         $importId = null;
         if (($preview['invalidRows'] ?? 1) === 0 && !empty($preview['records'])) {
-            $importId = bin2hex(random_bytes(20));
-            $importDirectory = forecastRuntimeDirectory() . DIRECTORY_SEPARATOR . 'imports';
-            if (!is_dir($importDirectory) && !mkdir($importDirectory, 0700, true) && !is_dir($importDirectory)) throw new ApiException(500, 'Historical sales import storage could not be initialized.');
-            $importData = ['records' => $preview['records'], 'fileName' => basename((string)$file['name']), 'rowCount' => (int)$preview['validRows'], 'uploadedBy' => $user['id'], 'createdAt' => gmdate(DATE_ATOM)];
-            $saved = file_put_contents($importDirectory . DIRECTORY_SEPARATOR . $importId . '.json', json_encode($importData, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR), LOCK_EX);
-            if ($saved === false) throw new ApiException(500, 'Historical sales import could not be saved.');
+            $savedImport = insertTable('forecast_imports', [
+                'uploaded_by' => $user['id'],
+                'file_name' => substr(basename((string)$file['name']), 0, 255),
+                'source_columns' => ['recognized' => $preview['columns'] ?? [], 'headers' => $preview['sourceHeaders'] ?? []],
+                'source_records' => $preview['sourceRecords'] ?? [],
+                'forecast_records' => $preview['records'],
+                'raw_row_count' => (int)($preview['rawRowCount'] ?? 0),
+                'valid_row_count' => (int)$preview['validRows'],
+                'invalid_row_count' => (int)$preview['invalidRows'],
+                'duplicate_row_count' => (int)($preview['duplicateRows'] ?? 0),
+            ], 'id,file_name,raw_row_count,valid_row_count,created_at,uploaded_by');
+            $importId = (string)$savedImport['id'];
         }
         unset($preview['records']);
+        unset($preview['sourceRecords']);
         respond(['valid' => $importId !== null, 'importId' => $importId, ...$preview]);
     }
     if ($path === '/admin/forecasts/run' && $method === 'POST') {
@@ -856,23 +888,18 @@ function route(string $method, string $path): void {
         if (!(is_int($rawHorizon) || (is_string($rawHorizon) && preg_match('/^\\d+$/', $rawHorizon))) || !in_array((int)$rawHorizon, [1, 3, 6, 12], true)) fail(400, 'Choose a forecast horizon of 1, 3, 6, or 12 months.');
         $horizon = (int)$rawHorizon;
         $excelSales = [];
-        $importId = is_string($input['importId'] ?? null) ? $input['importId'] : '';
-        if (isset($input['importId']) && !is_string($input['importId'])) fail(400, 'Historical sales preview is invalid. Upload the workbook again.');
+        $rawImportId = $input['importId'] ?? null;
+        $importId = $rawImportId === null || $rawImportId === '' ? '' : requireUuid($rawImportId, 'Historical import');
+        $importData = null;
         if ($importId !== '') {
-            if (!preg_match('/^[a-f0-9]{40}$/', $importId)) fail(400, 'Historical sales preview is invalid. Upload the workbook again.');
-            $importPath = forecastRuntimeDirectory() . DIRECTORY_SEPARATOR . 'imports' . DIRECTORY_SEPARATOR . $importId . '.json';
-            $importData = is_file($importPath) ? json_decode((string)file_get_contents($importPath), true) : null;
-            if (is_array($importData) && (string)($importData['uploadedBy'] ?? '') !== (string)$admin['id']) fail(403, 'This historical sales import belongs to another account. Upload the workbook again.');
-            $excelSales = is_array($importData) ? ($importData['records'] ?? null) : null;
-            if (!is_array($excelSales)) fail(400, 'Historical sales import is unavailable. Upload the workbook again.');
+            $importData = oneTable('forecast_imports', 'id=eq.' . rawurlencode($importId) . '&uploaded_by=eq.' . rawurlencode($admin['id']));
+            if (!$importData || !is_array($importData['forecast_records'] ?? null)) fail(400, 'Historical sales import is unavailable. Upload the workbook again.');
         }
-        $medicines = selectAllRows('medicines', 'id,name,stock_quantity');
         $result = runForecastEngine([
-            'action' => 'forecast',
+            'action' => 'revenue_forecast',
             'horizon' => $horizon,
-            'medicines' => $medicines,
-            'systemSales' => completedSystemSales(),
-            'excelSales' => $excelSales,
+            'records' => $importData['forecast_records'] ?? [],
+            'systemRevenue' => completedSystemRevenue(),
         ]);
         $run = insertTable('forecast_runs', [
             'generated_by' => $admin['id'],
@@ -880,26 +907,23 @@ function route(string $method, string $path): void {
             'historical_end_date' => $result['historicalEndDate'],
             'period_granularity' => 'monthly',
             'forecast_horizon' => $horizon,
-            'model_type' => (string)($result['modelType'] ?? 'linear_regression'),
-        ]);
-        // Persist only columns that exist in forecast_results. Historical-only
-        // products keep their name and have no linked inventory medicine.
+            'model_type' => 'xgboost',
+            'prediction_target' => 'monthly_sales_revenue_php',
+            'evaluation_metadata' => $result,
+        ], 'id,created_at,model_type,prediction_target');
         $databaseResults = array_map(static fn(array $row): array => [
             'forecast_run_id' => $run['id'],
-            'medicine_id' => $row['medicine_id'] ?? null,
-            'medicine_name' => (string)($row['medicine_name'] ?? ''),
-            'forecast_period' => (string)$row['forecast_period'],
-            'predicted_quantity' => (float)$row['predicted_quantity'],
-        ], $result['results']);
+            'forecast_period' => (string)($row['period'] ?? '') . '-01',
+            'predicted_revenue' => (float)$row['forecastRevenue'],
+        ], $result['forecastMonthlyRevenue']);
         if ($databaseResults) {
             supabaseRequest('/rest/v1/forecast_results?select=*', 'POST', $databaseResults, ['Prefer: return=representation']);
         }
         $result['id'] = (string)$run['id'];
         $result['createdAt'] = $run['created_at'] ?? null;
-        $result['modelType'] = (string)($run['model_type'] ?? $result['modelType'] ?? 'linear_regression');
-        $result['evaluationMethod'] = (string)($result['evaluationMethod'] ?? 'holdout_test_data');
+        $result['modelType'] = (string)$run['model_type'];
         $result['importId'] = $importId !== '' ? $importId : null;
-        forecastMetadata((string)$run['id'], $result);
+        $result['createdAt'] = $run['created_at'] ?? null;
         respond($result, 201);
     }
     if ($path === '/admin/forecasts' && $method === 'GET') {
@@ -916,9 +940,25 @@ function route(string $method, string $path): void {
         $output = [];
         foreach ($runs as $run) {
             $id = (string)$run['id'];
+            if (($run['prediction_target'] ?? 'medicine_quantity') === 'monthly_sales_revenue_php') {
+                $evaluation = is_array($run['evaluation_metadata'] ?? null) ? $run['evaluation_metadata'] : [];
+                $forecastRows = array_map(static fn(array $row): array => [
+                    'period' => substr((string)$row['forecast_period'], 0, 7),
+                    'forecastRevenue' => (float)($row['predicted_revenue'] ?? 0),
+                ], $resultsByRun[$id] ?? []);
+                $evaluation['id'] = $id;
+                $evaluation['createdAt'] = $run['created_at'] ?? null;
+                $evaluation['predictionTarget'] = 'monthly_sales_revenue_php';
+                $evaluation['forecastHorizon'] = (int)($run['forecast_horizon'] ?? 0);
+                $evaluation['modelType'] = (string)($run['model_type'] ?? 'xgboost');
+                $evaluation['forecastMonthlyRevenue'] = $forecastRows;
+                $output[] = $evaluation;
+                continue;
+            }
             $details = $metadata[$id] ?? [];
             $output[] = [
                 'id' => $id,
+                'predictionTarget' => 'medicine_quantity',
                 'createdAt' => $run['created_at'] ?? null,
                 'historicalStartDate' => $run['historical_start_date'] ?? null,
                 'historicalEndDate' => $run['historical_end_date'] ?? null,
@@ -943,16 +983,16 @@ function route(string $method, string $path): void {
     }
     if ($path === '/admin/forecasts/imports' && $method === 'GET') {
         requireManagerOrAdmin();
-        $directory = forecastRuntimeDirectory() . DIRECTORY_SEPARATOR . 'imports';
-        $imports = [];
-        foreach (glob($directory . DIRECTORY_SEPARATOR . '*.json') ?: [] as $importPath) {
-            $importId = basename($importPath, '.json');
-            if (!preg_match('/^[a-f0-9]{40}$/', $importId)) continue;
-            $importData = json_decode((string)file_get_contents($importPath), true);
-            if (!is_array($importData) || ($importData['uploadedBy'] ?? '') !== $user['id']) continue;
-            $imports[] = ['id' => $importId, 'fileName' => $importData['fileName'] ?? 'Historical workbook', 'rowCount' => (int)($importData['rowCount'] ?? 0), 'createdAt' => $importData['createdAt'] ?? null];
-        }
-        usort($imports, static fn(array $a, array $b): int => strcmp((string)($b['createdAt'] ?? ''), (string)($a['createdAt'] ?? '')));
+        $rows = selectAllRows('forecast_imports', 'id,file_name,raw_row_count,valid_row_count,invalid_row_count,duplicate_row_count,created_at', 'uploaded_by=eq.' . rawurlencode($user['id']) . '&order=created_at.desc');
+        $imports = array_map(static fn(array $row): array => [
+            'id' => (string)$row['id'],
+            'fileName' => (string)$row['file_name'],
+            'rowCount' => (int)$row['raw_row_count'],
+            'validRows' => (int)$row['valid_row_count'],
+            'invalidRows' => (int)$row['invalid_row_count'],
+            'duplicateRows' => (int)$row['duplicate_row_count'],
+            'createdAt' => $row['created_at'] ?? null,
+        ], $rows);
         respond(['imports' => $imports]);
     }
     if ($path === '/admin/dashboard' && $method === 'GET') {
