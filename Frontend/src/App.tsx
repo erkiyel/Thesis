@@ -37,7 +37,7 @@ function LoadingScreen() {
 }
 
 function AccessBoundary() {
-  const { user, logout } = useAuth();
+  const { user, logout, profileError, refreshUser } = useAuth();
   return (
     <main className="flex min-h-[100dvh] items-center justify-center bg-background p-6">
       <section className="w-full max-w-lg rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
@@ -45,15 +45,18 @@ function AccessBoundary() {
           <span className="font-serif text-xl font-extrabold">!</span>
         </div>
         <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">Access boundary</p>
-        <h1 className="mt-3 font-serif text-3xl font-extrabold tracking-tight">Role assignment required</h1>
+        <h1 className="mt-3 font-serif text-3xl font-extrabold tracking-tight">{profileError ? 'Unable to verify workspace' : 'Role assignment required'}</h1>
         <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-muted-foreground">
-          {user?.profile?.approval_status === 'pending'
+          {profileError
+            ? profileError
+            : user?.profile?.approval_status === 'pending'
             ? 'Your account is pending approval. An administrator must review your registration before you can access the system.'
             : user?.profile?.approval_status === 'rejected'
               ? 'This registration was not approved. Contact the system administrator for help.'
               : 'This account is not assigned an active workspace role. Ask your system administrator for help.'}
         </p>
         <p className="mt-4 break-all font-mono text-[10px] text-muted-foreground" data-testid="text-unassigned-user">{user?.email ?? user?.id}</p>
+        {profileError && <button onClick={() => void refreshUser()} className="mt-5 inline-flex h-10 items-center justify-center rounded-md border border-border px-5 text-sm font-semibold" data-testid="button-retry-profile">Retry workspace check</button>}
         <button onClick={() => void logout()} className="mt-7 inline-flex h-10 items-center justify-center rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground" data-testid="button-boundary-logout">Sign out</button>
       </section>
     </main>

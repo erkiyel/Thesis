@@ -25,6 +25,7 @@ export interface AuthSession {
   expires_at?: number;
   expires_in?: number;
   token_type?: string;
+  profileLoadError?: string;
   user: AuthUser;
 }
 
@@ -40,10 +41,59 @@ const supabasePublishableKey = String(
     '',
 );
 
+function getAuthStorageKey(url: string) {
+  try {
+    const projectRef = new URL(url).hostname.split('.')[0];
+    return `sb-${projectRef}-auth-token`;
+  } catch {
+    return 'sb-auth-token';
+  }
+}
+
+const authStorageKey = getAuthStorageKey(supabaseUrl);
+const memoryAuthStorage = new Map<string, string>();
+const sessionAuthStorage = {
+  getItem(key: string) {
+    try {
+      return window.sessionStorage.getItem(key) ?? memoryAuthStorage.get(key) ?? null;
+    } catch {
+      return memoryAuthStorage.get(key) ?? null;
+    }
+  },
+  setItem(key: string, value: string) {
+    try {
+      window.sessionStorage.setItem(key, value);
+      memoryAuthStorage.delete(key);
+    } catch {
+      memoryAuthStorage.set(key, value);
+    }
+  },
+  removeItem(key: string) {
+    memoryAuthStorage.delete(key);
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch {
+      // The in-memory fallback is already cleared.
+    }
+  },
+};
+
+// Earlier versions used Supabase's default localStorage key. Remove only that
+// project's auth entry; unrelated application preferences remain untouched.
+if (typeof window !== 'undefined' && supabaseUrl) {
+  try {
+    window.localStorage.removeItem(authStorageKey);
+  } catch {
+    // The new client never reads localStorage, so a blocked store is harmless.
+  }
+}
+
 export const supabase = supabaseUrl && supabasePublishableKey
   ? createClient(supabaseUrl, supabasePublishableKey, {
       auth: {
         persistSession: true,
+        storage: sessionAuthStorage,
+        storageKey: authStorageKey,
         autoRefreshToken: true,
         detectSessionInUrl: true,
       },
@@ -87,16 +137,28 @@ async function loadProfile(userId: string): Promise<Profile | null> {
 
 export async function resolveSession(
   session: Session | null,
+  previousSession: AuthSession | null = null,
 ): Promise<AuthSession | null> {
   if (!session) return null;
 
-  const profile = await loadProfile(session.user.id);
+  let profile = previousSession?.user.id === session.user.id
+    ? previousSession.user.profile
+    : null;
+  let profileLoadError: string | undefined;
+  try {
+    profile = await loadProfile(session.user.id);
+  } catch {
+    // Preserve a valid Supabase session through temporary profile/API outages.
+    // A missing profile still cannot pass getRole() or protected-route checks.
+    profileLoadError = 'Your session is active, but workspace permissions could not be checked. Check your connection and retry.';
+  }
   return {
     access_token: session.access_token,
     refresh_token: session.refresh_token,
     expires_at: session.expires_at,
     expires_in: session.expires_in,
     token_type: session.token_type,
+    profileLoadError,
     user: {
       ...session.user,
       profile,
@@ -204,8 +266,9 @@ export async function getSession(): Promise<AuthSession | null> {
 export async function signOut() {
   if (!supabase) return;
 
-  const { error } = await supabase.auth.signOut();
-  if (error) throw new Error(`Unable to sign out: ${error.message}`);
+  // Local scope clears this tab's session immediately and leaves other devices
+  // or independent tabs alone. Supabase revokes the refresh token best-effort.
+  await supabase.auth.signOut({ scope: 'local' });
 }
 
 export async function requestPasswordReset(email: string) {

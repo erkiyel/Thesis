@@ -9,7 +9,7 @@ import { getRole, isSupabaseConfigured, resendSignupConfirmation } from '@/lib/s
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { session, isLoading, login, logout } = useAuth();
+  const { session, isLoading, profileError, login, logout, refreshUser } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -21,6 +21,7 @@ export default function Login() {
   const [resendMessage, setResendMessage] = useState('');
   const [resendError, setResendError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [profileRetrying, setProfileRetrying] = useState(false);
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -54,6 +55,10 @@ export default function Login() {
     setIsSubmitting(true);
     try {
       const next = await login(normalizedEmail, password);
+      if (next.profileLoadError) {
+        setError(next.profileLoadError);
+        return;
+      }
       const role = getRole(next.user);
       if (!role) {
         const approvalStatus = next.user.profile?.approval_status;
@@ -76,6 +81,18 @@ export default function Login() {
         : message);
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function retryWorkspaceCheck() {
+    setProfileRetrying(true);
+    setError('');
+    try {
+      await refreshUser();
+    } catch {
+      setError('Your session is active, but workspace permissions still cannot be checked. Check your connection and retry.');
+    } finally {
+      setProfileRetrying(false);
     }
   }
 
@@ -171,6 +188,7 @@ export default function Login() {
               {error && (
                 <div className="rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm leading-5 text-destructive" role="alert" data-testid="status-login-error">{error}</div>
               )}
+              {session && profileError && <Button type="button" variant="outline" onClick={() => void retryWorkspaceCheck()} disabled={profileRetrying} className="w-full" data-testid="button-retry-workspace-check">{profileRetrying ? 'Checking workspace…' : 'Retry workspace check'}</Button>}
               {requiresConfirmation && (
                 <div className="space-y-3 rounded-lg border border-border bg-muted/40 p-4">
                   <Button type="button" variant="outline" disabled={resendBusy || resendCooldown > 0 || !email.trim()} onClick={() => void handleResendConfirmation()} className="w-full" data-testid="button-resend-confirmation">
