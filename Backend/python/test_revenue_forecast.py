@@ -141,6 +141,11 @@ class RevenueForecastTests(unittest.TestCase):
         self.assertEqual(result["metrics"]["testObservations"], 12)
         self.assertEqual({row["metrics"]["testObservations"] for row in result["modelComparisons"]}, {12})
         self.assertEqual({(row["evaluationPeriodStart"], row["evaluationPeriodEnd"]) for row in result["modelComparisons"]}, {(result["evaluationPeriodStart"], result["evaluationPeriodEnd"])})
+        xgb = next(row for row in result["modelComparisons"] if row["modelType"] == "xgboost")
+        self.assertEqual(len(xgb["evaluationPredictions"]), 12)
+        self.assertEqual(xgb["evaluationExecution"]["evaluationFolds"], 4)
+        self.assertFalse(xgb["evaluationExecution"]["fallbackUsed"])
+        self.assertTrue(all(row["absoluteError"] >= 0 for row in xgb["evaluationPredictions"]))
         self.assertEqual(len(result["forecastMonthlyRevenue"]), 3)
 
 

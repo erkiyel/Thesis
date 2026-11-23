@@ -368,13 +368,26 @@ def forecast(records: list[dict], horizon: int, system_records: list[dict] | Non
         actual_all: list[float] = []
         predicted_all: list[float] = []
         periods: list[str] = []
+        evaluation_predictions: list[dict] = []
         for origin in origins:
             observed = values[:origin + 1]
             predicted = predict_recursive(model_name, observed, horizon, training_start_ordinal)
             fold_actual = values[origin + 1:origin + 1 + horizon]
             actual_all.extend(fold_actual)
             predicted_all.extend(predicted)
-            periods.extend(training_months[origin + 1:origin + 1 + horizon])
+            fold_periods = training_months[origin + 1:origin + 1 + horizon]
+            periods.extend(fold_periods)
+            evaluation_predictions.extend(
+                {
+                    "period": period,
+                    "actualRevenue": round(actual, 2),
+                    "predictedRevenue": round(prediction, 2),
+                    "absoluteError": round(abs(actual - prediction), 2),
+                    "absolutePercentageError": round(abs(actual - prediction) / abs(actual) * 100, 6) if actual != 0 else None,
+                }
+                for period, actual, prediction in zip(fold_periods, fold_actual, predicted)
+            )
+        is_fitted_model = model_name in {"xgboost", "random_forest"}
         comparisons.append({
             "modelType": model_name,
             "label": MODEL_NAMES[model_name],
@@ -383,6 +396,16 @@ def forecast(records: list[dict], horizon: int, system_records: list[dict] | Non
             "evaluationPeriodStart": periods[0] if periods else None,
             "evaluationPeriodEnd": periods[-1] if periods else None,
             "forecastHorizon": horizon,
+            "evaluationPredictions": evaluation_predictions,
+            "evaluationExecution": {
+                "strategy": "fitted_model_per_recursive_step" if is_fitted_model else "deterministic_baseline",
+                "evaluationFolds": len(origins),
+                "trainingRowsByFoldAndStep": [
+                    [max(0, origin + 1 - 3 + step) for step in range(horizon)]
+                    for origin in origins
+                ] if model_name in {"xgboost", "random_forest", "linear_regression"} else [],
+                "fallbackUsed": False,
+            },
         })
 
     predicted_future = predict_recursive("xgboost", values, horizon, training_start_ordinal)

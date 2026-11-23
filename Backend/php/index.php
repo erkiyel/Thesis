@@ -968,11 +968,64 @@ function route(string $method, string $path): void {
         $resultsByRun = [];
         foreach ($storedResults as $forecastRow) $resultsByRun[(string)$forecastRow['forecast_run_id']][] = $forecastRow;
         $metadata = forecastMetadata();
+        $latestRevenueRunId = '';
+        foreach ($runs as $candidateRun) {
+            if (($candidateRun['prediction_target'] ?? '') === 'monthly_sales_revenue_php') {
+                $latestRevenueRunId = (string)$candidateRun['id'];
+                break;
+            }
+        }
         $output = [];
         foreach ($runs as $run) {
             $id = (string)$run['id'];
             if (($run['prediction_target'] ?? 'medicine_quantity') === 'monthly_sales_revenue_php') {
                 $evaluation = is_array($run['evaluation_metadata'] ?? null) ? $run['evaluation_metadata'] : [];
+                // Older saved runs may contain only aggregate metrics. Rebuild
+                // month-level test details for the latest run from its stored
+                // monthly actuals, and expose them only if all reported scores
+                // and the test window reproduce exactly under the current code.
+                $hasMonthlyEvaluation = false;
+                foreach (($evaluation['modelComparisons'] ?? []) as $savedComparison) {
+                    if (($savedComparison['modelType'] ?? '') === 'xgboost' && !empty($savedComparison['evaluationPredictions'])) {
+                        $hasMonthlyEvaluation = true;
+                        break;
+                    }
+                }
+                if ($id === $latestRevenueRunId && !$hasMonthlyEvaluation) {
+                    $actuals = is_array($evaluation['actualMonthlyRevenue'] ?? null) ? $evaluation['actualMonthlyRevenue'] : [];
+                    $replayRecords = [];
+                    foreach ($actuals as $actual) {
+                        $period = (string)($actual['period'] ?? '');
+                        $amount = $actual['actualRevenue'] ?? null;
+                        if (preg_match('/^\d{4}-\d{2}$/', $period) && is_numeric($amount) && (float)$amount >= 0) {
+                            $replayRecords[] = ['date' => $period . '-01', 'salesAmount' => (float)$amount];
+                        }
+                    }
+                    if ($replayRecords) {
+                        try {
+                            $replayed = runForecastEngine([
+                                'action' => 'revenue_forecast',
+                                'horizon' => (int)($run['forecast_horizon'] ?? 3),
+                                'records' => $replayRecords,
+                                'systemRevenue' => [],
+                            ]);
+                            $storedMetrics = is_array($evaluation['metrics'] ?? null) ? $evaluation['metrics'] : [];
+                            $replayedMetrics = is_array($replayed['metrics'] ?? null) ? $replayed['metrics'] : [];
+                            $sameScores = true;
+                            foreach (['mae', 'mape', 'rmse', 'testObservations'] as $metric) {
+                                if (($storedMetrics[$metric] ?? null) !== ($replayedMetrics[$metric] ?? null)) $sameScores = false;
+                            }
+                            if ($sameScores
+                                && ($evaluation['evaluationPeriodStart'] ?? null) === ($replayed['evaluationPeriodStart'] ?? null)
+                                && ($evaluation['evaluationPeriodEnd'] ?? null) === ($replayed['evaluationPeriodEnd'] ?? null)) {
+                                $evaluation['modelComparisons'] = $replayed['modelComparisons'] ?? [];
+                                $evaluation['historicalEvaluationRecomputed'] = true;
+                            }
+                        } catch (Throwable $replayError) {
+                            error_log('Could not reproduce legacy revenue forecast evaluation details for run ' . $id . ': ' . $replayError->getMessage());
+                        }
+                    }
+                }
                 $forecastRows = array_map(static fn(array $row): array => [
                     'period' => substr((string)$row['forecast_period'], 0, 7),
                     'forecastRevenue' => (float)($row['predicted_revenue'] ?? 0),
