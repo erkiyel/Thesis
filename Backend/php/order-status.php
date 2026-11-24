@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 function supportedOrderStatuses(): array {
-    return ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    return ['pending', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
 }
 
 function normalizeOrderStatus(mixed $value): ?string {

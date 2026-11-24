@@ -25,9 +25,9 @@ Set the Cloudflare Pages build variable `VITE_APP_URL=https://jacdash.pages.dev`
 
 ### JAC-DEF-002 — Unsupported `confirmed` order status
 
-The admin UI offered `confirmed`, and PHP accepted it, while PostgreSQL rejected it as absent from the `order_status` enum. The UI and backend now share the supported application workflow values `pending`, `processing`, `shipped`, `delivered`, and `cancelled`. The pending-order count no longer includes `confirmed`. Tracking, purchase history, payment handling, and the paid-and-delivered archive code were not changed.
+The admin UI offered `confirmed`, and PHP accepted it, while PostgreSQL rejected it as absent from the `order_status` enum. The user has now verified the actual database enum. The UI and backend share its six values: `pending`, `processing`, `shipped`, `out_for_delivery`, `delivered`, and `cancelled`. `confirmed` is rejected. Tracking, purchase history, payment handling, and the paid-and-delivered archive code were not otherwise changed.
 
-No database migration was created or applied. A read-only Supabase status query could not start in this environment (`getaddrinfo() thread failed to start`), so the full enum catalog was not independently queried. The reported PostgreSQL error proves `confirmed` is not accepted. The other four choices were retained from the existing workflow; an authenticated save/retrieve test remains unverified.
+No database migration was created or applied. The six-value enum list is based on the user's verification of the actual Supabase enum; this session did not query Supabase. An authenticated save/retrieve test remains unverified.
 
 ## Retest record
 
@@ -36,7 +36,7 @@ The statuses below distinguish automated code checks from the original manual fu
 | Test case ID | Original result | Defect | Fix description | Retest date | Test environment | Tester | Expected result | Observed result | Retest status | Evidence |
 |---|---|---|---|---|---|---|---|---|---|
 | JAC-TC12.2 — Password reset link | Failed in the defect report; original case log not supplied | JAC-DEF-001 | Production recovery redirect targets JacDASH Pages; local development keeps local origin | 2026-11-25 (code-level only) | Local Windows; Node auth-redirect tests | Not recorded | Email opens the deployed reset page; recovery session permits secure password update | Redirect-builder assertions pass. Supabase email delivery, Dashboard allowlist, token processing in a real email, and password update were not exercised | **Not Verified** | `docs/testing-evidence/2026-11-25/frontend-regression-tests.log`; no screenshot |
-| JAC-TC07.2 — Order status update | Failed in the defect report; original case log not supplied | JAC-DEF-002 | Remove the unsupported `confirmed` choice and reject it at PHP validation | 2026-11-25 (local regression only) | Local Windows; PHP helper tests and frontend tests | Not recorded | Every selectable status saves and is retrieved without enum error | `confirmed` is excluded and rejected by the local PHP validator. No authenticated Supabase order update/retrieval was run | **Not Verified** | `docs/testing-evidence/2026-11-25/php-order-status-tests.log`; `docs/testing-evidence/2026-11-25/frontend-regression-tests.log`; no screenshot |
+| JAC-TC07.2 — Order status update | **Failed — preserve original result** | JAC-DEF-002 | Align dropdown and PHP validation to the six verified enum values, retaining `out_for_delivery` and excluding `confirmed` | 2026-11-25 (local regression only) | Local Windows; PHP helper tests and frontend tests | Not recorded | Every selectable status saves and is retrieved without enum error | Automated list/validator checks pass. The corrected options are prepared for a manual retest, but no authenticated Supabase order update/retrieval was run | **Not Verified — ready for manual retest** | `docs/testing-evidence/2026-11-25/php-order-status-regression.log`; `docs/testing-evidence/2026-11-25/frontend-order-status-regression.log`; no screenshot |
 | Blocked case 1 of 3 — exact ID unavailable | Blocked (aggregate record only) | Not identified | No case-specific change can be mapped until its ID and steps are supplied | Not retested | No case procedure available | Not recorded | As stated in original test case | No case ID, steps, or expected result could be located in the project, supplied text attachments, thesis PDFs, or checked spreadsheet materials | **Not Verified** | No case-level source evidence available |
 | Blocked case 2 of 3 — exact ID unavailable | Blocked (aggregate record only) | Not identified | No case-specific change can be mapped until its ID and steps are supplied | Not retested | No case procedure available | Not recorded | As stated in original test case | No case ID, steps, or expected result could be located in the project, supplied text attachments, thesis PDFs, or checked spreadsheet materials | **Not Verified** | No case-level source evidence available |
 | Blocked case 3 of 3 — exact ID unavailable | Blocked (aggregate record only) | Not identified | No case-specific change can be mapped until its ID and steps are supplied | Not retested | No case procedure available | Not recorded | As stated in original test case | No case ID, steps, or expected result could be located in the project, supplied text attachments, thesis PDFs, or checked spreadsheet materials | **Not Verified** | No case-level source evidence available |
@@ -50,17 +50,31 @@ The statuses below distinguish automated code checks from the original manual fu
 
 The exact IDs of the three historical blocked cases remain unknown. They are deliberately shown as unidentified rows rather than assigned invented IDs. The original functional-test case sheet is needed to identify and retest them.
 
+### JAC-TC07.2 manual retest checklist — pending
+
+Run this only against a test/staging order and account, not production data:
+
+1. Sign in as an authorized admin and open Orders & Tracking.
+2. Confirm the dropdown contains exactly `pending`, `processing`, `shipped`, `out_for_delivery`, `delivered`, and `cancelled`; confirm `confirmed` is absent.
+3. For each status, save the test order and verify the API succeeds, then reload and confirm the saved order status.
+4. When a tracking update is supplied, verify the latest package-tracking event records the same status, including `out_for_delivery`.
+5. Verify a payment status update still persists independently of the order status.
+6. Verify an order is archived only when its payment is paid and its order status is delivered; other status/payment combinations remain outside that archive.
+7. Verify an unauthorized role still cannot update an order.
+
+Record the actual environment, tester, observations, and evidence after execution. Until then, keep JAC-TC07.2 failed in the historical results and its retest status Not Verified.
+
 ## Automated checks actually run
 
 | Check | Result |
 |---|---|
-| Frontend redirect/status regression tests | **6 passed, 0 failed** |
-| PHP order-status regression assertions | **11 passed** |
+| Frontend unit regression tests | **9 passed, 0 failed**; includes exact enum parity and paid/delivered archive cases |
+| PHP order-status regression assertions | **14 passed**; includes all six supported values, rejection cases, and frontend/PHP list parity |
 | PHP syntax check (`Backend/php/index.php`, `Backend/php/order-status.php`) | **No syntax errors** |
 | Frontend TypeScript check | **Passed** |
 | Frontend Vite production build | **Passed**; Vite reported an existing large-chunk advisory (>500 kB) |
 | Backend Python test suite | **22 passed, 0 failed** |
-| Read-only Supabase order-status query | **Not completed**; PHP cURL could not start name resolution (`getaddrinfo() thread failed to start`) |
+| Supabase enum source | Six values supplied as verified by the user; no query was needed or run during this retest |
 
 Genuine command output is stored in `docs/testing-evidence/2026-11-25/`. No screenshots were captured because the authenticated live flows were not run.
 
@@ -79,5 +93,5 @@ Report the later local checks separately: **6 frontend regression tests passed; 
 - Supabase Auth Site URL, Redirect URLs, and email-template settings require manual Dashboard confirmation.
 - Actual reset email delivery, secure token consumption, mismatch submission, and expired/reused link behavior remain unverified end to end.
 - Authenticated admin order status updates, permissions, persistence, purchase history, tracking history, and paid-and-delivered archive behavior remain unverified end to end.
-- The complete PostgreSQL enum catalog could not be read in this session. No database schema or production records were changed.
+- JAC-TC07.2 remains failed in the historical record and awaits manual execution with the corrected status choices. No database schema or production records were changed.
 - The original three blocked test case IDs and case-level test ledger were not available; provide the source appendix/log to complete those retests.
