@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . DIRECTORY_SEPARATOR . 'forecast-sales.php';
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'order-status.php';
 
 // Load local server settings for PHP's built-in development server. Hosting
 // providers should continue to supply these values as environment variables.
@@ -823,10 +824,9 @@ function route(string $method, string $path): void {
         $input = jsonBody();
         $order = oneTable('orders', 'id=eq.' . rawurlencode($orderId));
         if (!$order) fail(404, 'Order not found.');
-        $allowedStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'];
         $rawStatus = $input['status'] ?? $order['order_status'] ?? 'pending';
-        $status = is_string($rawStatus) ? strtolower($rawStatus) : '';
-        if (!in_array($status, $allowedStatuses, true)) fail(400, 'Invalid order status.');
+        $status = normalizeOrderStatus($rawStatus);
+        if ($status === null) fail(400, 'Invalid order status.');
         $paymentStatus = null;
         if (isset($input['paymentStatus'])) {
             if (!is_string($input['paymentStatus'])) fail(400, 'Invalid payment status.');
@@ -1088,7 +1088,7 @@ function route(string $method, string $path): void {
             'availableMedicineCount' => count(array_filter($medicines, fn($m) => ($m['is_available'] ?? true) && (int)($m['stock_quantity'] ?? 0) > 0)),
             'lowStockCount' => count(array_filter($medicines, fn($m) => (int)($m['stock_quantity'] ?? 0) <= 5)),
             'orderCount' => count($orders),
-            'pendingOrderCount' => count(array_filter($orders, fn($o) => in_array($o['order_status'] ?? '', ['pending', 'confirmed', 'processing'], true))),
+            'pendingOrderCount' => count(array_filter($orders, fn($o) => in_array($o['order_status'] ?? '', ['pending', 'processing'], true))),
             'revenue' => money(array_sum(array_map(fn($o) => money($o['total_amount'] ?? 0), array_filter($orders, fn($o) => ($o['order_status'] ?? '') !== 'cancelled')))),
         ]);
     }

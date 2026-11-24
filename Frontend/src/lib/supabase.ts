@@ -3,6 +3,7 @@ import {
   type Session,
   type User,
 } from '@supabase/supabase-js';
+import { buildAuthRedirectUrl } from './auth-redirect';
 
 export type UserRole = 'admin' | 'manager' | 'client' | 'partnership_account';
 
@@ -105,7 +106,12 @@ export function isSupabaseConfigured() {
 }
 
 export function emailConfirmationRedirect() {
-  return new URL(`${import.meta.env.BASE_URL}auth/callback`, window.location.origin).toString();
+  return buildAuthRedirectUrl('auth/callback', {
+    production: import.meta.env.PROD,
+    currentOrigin: window.location.origin,
+    configuredAppUrl: import.meta.env.VITE_APP_URL,
+    baseUrl: import.meta.env.BASE_URL,
+  });
 }
 
 export async function resendSignupConfirmation(email: string) {
@@ -278,10 +284,12 @@ export async function requestPasswordReset(email: string) {
     );
   }
 
-  const redirectTo = new URL(
-    `${import.meta.env.BASE_URL}reset-password`,
-    window.location.origin,
-  ).toString();
+  const redirectTo = buildAuthRedirectUrl('reset-password', {
+    production: import.meta.env.PROD,
+    currentOrigin: window.location.origin,
+    configuredAppUrl: import.meta.env.VITE_APP_URL,
+    baseUrl: import.meta.env.BASE_URL,
+  });
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo,
   });
