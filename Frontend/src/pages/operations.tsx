@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Link } from 'wouter';
 import { apiRequest, formatCurrency, formatDate, type Medicine, type Order } from '@/lib/api';
+import { requireApiArray } from '@/lib/api-base';
 import { ORDER_STATUSES } from '@/lib/order-status';
 import { isCompletedOrder } from '@/lib/order-utils';
 import { classifyInventory, DEFAULT_INVENTORY_ALERT_SETTINGS, getInventoryAlertSettings, INVENTORY_ALERT_SETTINGS_KEY, type InventoryAlertSettings } from '@/lib/inventory-alerts';
@@ -45,7 +46,7 @@ export function AdminDashboardPage({ view = 'home', role = 'admin' }: { view?: A
     try {
       setError('');
       if (view === 'orders') setOrders(await apiRequest<Order[]>('/orders'));
-      else if (view === 'inventory') setMedicines(await apiRequest<Medicine[]>('/medicines'));
+      else if (view === 'inventory') setMedicines(requireApiArray<Medicine>(await apiRequest<unknown>('/medicines'), '/medicines'));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to load the admin workspace.');
     } finally {
@@ -275,7 +276,7 @@ export function ClientCataloguePage({ view = 'catalogue' }: { view?: ClientPageV
     if (showLoading) setLoading(true);
     setError('');
     try {
-      const nextMedicines = view === 'home' || view === 'catalogue' ? await apiRequest<Medicine[]>('/medicines') : [];
+      const nextMedicines = view === 'home' || view === 'catalogue' ? requireApiArray<Medicine>(await apiRequest<unknown>('/medicines'), '/medicines') : [];
       const nextOrders = view === 'tracking' || view === 'history' ? await apiRequest<Order[]>('/orders') : [];
       setMedicines(nextMedicines); setOrders(nextOrders);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to load the page data.'); }

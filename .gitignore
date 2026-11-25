@@ -55,6 +55,8 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+# This file contains only the public API origin (no credentials).
+!Frontend/.env.production
 
 # Python
 __pycache__/

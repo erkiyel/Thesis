@@ -4,6 +4,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFoo
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/use-auth';
 import { apiRequest, type Medicine } from '@/lib/api';
+import { requireApiArray } from '@/lib/api-base';
 import { classifyInventory, getInventoryAlertSettings, type InventoryAlert } from '@/lib/inventory-alerts';
 
 function AlertTag({ children, danger = false }: { children: string; danger?: boolean }) {
@@ -32,7 +33,7 @@ export function AdminInventoryAlertHost() {
     inFlight.current = true;
     setLoading(true);
     try {
-      const inventory = await apiRequest<Medicine[]>('/medicines', { cache: 'no-store' });
+      const inventory = requireApiArray<Medicine>(await apiRequest<unknown>('/medicines', { cache: 'no-store' }), '/medicines');
       const next = classifyInventory(inventory, getInventoryAlertSettings());
       setAlerts(next);
       if (showDialog && next.length) setOpen(true);

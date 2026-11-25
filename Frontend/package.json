@@ -8,7 +8,7 @@
     "build": "vite build --config vite.config.ts",
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:unit": "node --experimental-strip-types --test src/lib/auth-redirect.test.ts src/lib/order-status.test.ts src/lib/order-utils.test.ts src/lib/revenue-forecast-data.test.ts"
+    "test:unit": "node --experimental-strip-types --test src/lib/api-base.test.ts src/lib/auth-redirect.test.ts src/lib/order-status.test.ts src/lib/order-utils.test.ts src/lib/revenue-forecast-data.test.ts"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",
