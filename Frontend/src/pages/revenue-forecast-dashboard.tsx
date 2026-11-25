@@ -7,24 +7,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip as InfoTooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { apiRequest, formatDate } from '@/lib/api';
+import { normalizeRevenueRun, parseRevenueImportsResponse, parseRevenueRunsResponse, type HistoricalImport, type RevenueMetrics, type RevenueRun } from '@/lib/revenue-forecast-data';
 
-type Metrics = { mae: number | null; mape: number | null; rmse: number | null; testObservations: number; mapeSamples: number; zeroActualObservations: number };
-type EvaluationPrediction = { period: string; actualRevenue: number; predictedRevenue: number; absoluteError: number; absolutePercentageError: number | null };
-type Comparison = { modelType: string; label: string; selected: boolean; metrics: Metrics; evaluationPeriodStart: string | null; evaluationPeriodEnd: string | null; forecastHorizon: number; evaluationPredictions?: EvaluationPrediction[]; evaluationExecution?: { strategy: string; evaluationFolds: number; trainingRowsByFoldAndStep: number[][]; fallbackUsed: boolean } };
-type RevenueRun = {
-  id: string; createdAt?: string | null; predictionTarget: string; modelType: string; modelLabel: string;
-  historicalStartDate: string; historicalEndDate: string; forecastHorizon: number; minimumRequiredMonths: number;
-  modelConfig: Record<string, string | number>; trainingObservationCount: number; testObservationCount: number;
-  evaluationMethod: string; evaluationPeriodStart: string | null; evaluationPeriodEnd: string | null; metrics: Metrics;
-  evaluationAvailable?: boolean; dataLimitationWarning?: string | null;
-  historicalEvaluationRecomputed?: boolean;
-  modelComparisons: Comparison[]; actualMonthlyRevenue: Array<{ period: string; actualRevenue: number }>;
-  forecastMonthlyRevenue: Array<{ period: string; forecastRevenue: number }>; missingMonths: string[];
-  overlapMonthsUsingImportedOnly?: string[]; overlapSystemMonthsExcluded?: number; forecastVersion: string;
-};
+type Metrics = RevenueMetrics;
 type RevenuePreview = { valid: boolean; importId: string | null; duplicateUpload?: boolean; rawRowCount: number; validRows: number; reviewRows?: number; invalidRows: number; duplicateRows: number; errors: Array<{ row: number; messages: string[] }>; errorsTruncated?: boolean; columns?: Record<string, string>; historicalStartDate?: string; historicalEndDate?: string; observedMonths: number; missingMonths: string[]; reconciliationErrors?: Array<{ month: string; transactionRevenue: number | null; monthlySheetRevenue: number | null; transactionRecordCount: number | null; monthlySheetRecordCount: number | null }>; monthlyRevenue?: Array<{ month: string; revenue: number | null; records: number | null; coverage: string; notes: string }>; unresolvedReviewRows?: Array<{ sourceRow: number; transactionDate: string | null; clientName: string | null; productDescription: string | null; customerType: string | null; siNumber: string | null; qualityNotes: string | null }>; preview: Array<{ date?: string; transactionDate?: string | null; salesAmount: number; invoiceReference?: string | null; siNumber?: string | null; customer?: string | null; clientName?: string | null; productDescription: string | null; sourceRow: number }> };
-type HistoricalImport = { id: string; fileName: string; rowCount: number; validRows: number; invalidRows: number; duplicateRows: number; createdAt: string | null };
 type ChartPoint = { period: string; actualRevenue: number | null; forecastRevenue: number | null };
+
+function parseRevenuePreviewResponse(value: unknown): RevenuePreview {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('Forecast preview API returned an invalid response object.');
+  const response = value as Record<string, unknown>;
+  if (typeof response.valid !== 'boolean' || (response.importId !== null && response.importId !== undefined && typeof response.importId !== 'string')) {
+    throw new Error('Forecast preview API returned an invalid response: import validity or ID is missing.');
+  }
+  for (const field of ['rawRowCount', 'validRows', 'invalidRows', 'duplicateRows', 'observedMonths']) {
+    if (typeof response[field] !== 'number' || !Number.isFinite(response[field])) throw new Error(`Forecast preview API returned an invalid response: "${field}" must be a number.`);
+  }
+  const arrayFields = ['errors', 'missingMonths', 'preview', 'reconciliationErrors', 'monthlyRevenue', 'unresolvedReviewRows'] as const;
+  for (const field of arrayFields) {
+    const fieldValue = response[field];
+    if (fieldValue !== undefined && fieldValue !== null && !Array.isArray(fieldValue)) throw new Error(`Forecast preview API returned an invalid response: "${field}" must be an array.`);
+  }
+  const arrays = Object.fromEntries(arrayFields.map((field) => [field, response[field] ?? []]));
+  return { ...response, ...arrays, importId: response.importId ?? null } as RevenuePreview;
+}
 
 const money = (value: number | null | undefined) => value == null ? '—' : new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 2 }).format(value);
 const metricHelp = {
@@ -72,12 +77,14 @@ export default function RevenueForecastDashboard({ role = 'admin' }: { role?: 'a
     try {
       setError('');
       const [runResponse, importResponse] = await Promise.all([
-        apiRequest<{ runs: RevenueRun[] }>('/admin/forecasts', { cache: 'no-store' }),
-        apiRequest<{ imports: HistoricalImport[] }>('/admin/forecasts/imports', { cache: 'no-store' }),
+        apiRequest<unknown>('/admin/forecasts', { cache: 'no-store' }),
+        apiRequest<unknown>('/admin/forecasts/imports', { cache: 'no-store' }),
       ]);
-      setRuns(runResponse.runs);
-      setImports(importResponse.imports);
-      setSelectedRunId((current) => runResponse.runs.some((run) => run.id === current) ? current : runResponse.runs.find((run) => run.predictionTarget === 'monthly_sales_revenue_php')?.id ?? '');
+      const availableRuns = parseRevenueRunsResponse(runResponse);
+      const availableImports = parseRevenueImportsResponse(importResponse);
+      setRuns(availableRuns);
+      setImports(availableImports);
+      setSelectedRunId((current) => availableRuns.some((run) => run.id === current) ? current : availableRuns.find((run) => run.predictionTarget === 'monthly_sales_revenue_php')?.id ?? '');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to load revenue forecast data.');
     } finally { setLoading(false); }
@@ -96,12 +103,12 @@ export default function RevenueForecastDashboard({ role = 'admin' }: { role?: 'a
     const body = new FormData(); body.append('file', next);
     setPreviewing(true);
     try {
-      const result = await apiRequest<RevenuePreview>('/admin/forecasts/preview', { method: 'POST', body });
+      const result = parseRevenuePreviewResponse(await apiRequest<unknown>('/admin/forecasts/preview', { method: 'POST', body }));
       setPreview(result);
       if (result.importId && result.valid) {
         setImportId(result.importId);
-        const saved = await apiRequest<{ imports: HistoricalImport[] }>('/admin/forecasts/imports', { cache: 'no-store' });
-        setImports(saved.imports);
+        const saved = await apiRequest<unknown>('/admin/forecasts/imports', { cache: 'no-store' });
+        setImports(parseRevenueImportsResponse(saved));
       } else if (!result.valid) setError('Correct the invalid records before forecasting. No import was saved.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to validate the workbook.');
@@ -112,7 +119,9 @@ export default function RevenueForecastDashboard({ role = 'admin' }: { role?: 'a
     if (file && !preview?.valid) { setError('Validate the selected workbook before forecasting.'); return; }
     setRunning(true); setError('');
     try {
-      const result = await apiRequest<RevenueRun>('/admin/forecasts/run', { method: 'POST', body: JSON.stringify({ horizon, importId: importId || null }) });
+      const response = await apiRequest<unknown>('/admin/forecasts/run', { method: 'POST', body: JSON.stringify({ horizon, importId: importId || null }) });
+      const result = normalizeRevenueRun(response, 0);
+      if (result.predictionTarget !== 'monthly_sales_revenue_php') throw new Error('Forecast run API returned a record for an unexpected prediction target.');
       setRuns((current) => [result, ...current.filter((run) => run.id !== result.id)]);
       setSelectedRunId(result.id);
       await refreshImportsOnly();
@@ -122,7 +131,11 @@ export default function RevenueForecastDashboard({ role = 'admin' }: { role?: 'a
   }
 
   async function refreshImportsOnly() {
-    try { setImports((await apiRequest<{ imports: HistoricalImport[] }>('/admin/forecasts/imports', { cache: 'no-store' })).imports); } catch {}
+    try {
+      setImports(parseRevenueImportsResponse(await apiRequest<unknown>('/admin/forecasts/imports', { cache: 'no-store' })));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Unable to refresh historical imports.');
+    }
   }
 
   return <AppShell role={role} title={role === 'admin' ? 'Admin home' : 'Manager home'} eyebrow="Operations workspace">
@@ -144,20 +157,21 @@ export default function RevenueForecastDashboard({ role = 'admin' }: { role?: 'a
 
       {selectedRun ? <>
         <section className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-          <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Selected run</p><h3 className="mt-2 font-serif text-2xl font-extrabold">Forecast summary</h3><p className="mt-1 text-sm text-muted-foreground">{selectedRun.historicalStartDate} through {selectedRun.historicalEndDate} · {selectedRun.forecastHorizon}-month horizon · {selectedRun.evaluationMethod.replaceAll('_', ' ')}</p></div><span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">{selectedRun.modelLabel}</span></div>
+          <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Selected run</p><h3 className="mt-2 font-serif text-2xl font-extrabold">Forecast summary</h3><p className="mt-1 text-sm text-muted-foreground">{selectedRun.historicalStartDate ?? '—'} through {selectedRun.historicalEndDate ?? '—'} · {selectedRun.forecastHorizon}-month horizon · {selectedRun.evaluationMethod.replaceAll('_', ' ')}</p></div><span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">{selectedRun.modelLabel}</span></div>
           <div className="mt-5 grid gap-3 sm:grid-cols-3"><MetricCard name="MAE" value={selectedRun.metrics.mae} /><MetricCard name="MAPE" value={selectedRun.metrics.mape} /><MetricCard name="RMSE" value={selectedRun.metrics.rmse} /></div>
           <p className="mt-4 text-xs text-muted-foreground">Training observations: {selectedRun.trainingObservationCount} · Test observations: {selectedRun.testObservationCount} · Test period: {selectedRun.evaluationPeriodStart ?? '—'} to {selectedRun.evaluationPeriodEnd ?? '—'} · Zero actual months excluded from MAPE: {selectedRun.metrics.zeroActualObservations}</p>
+          {selectedRun.testObservationCount === 0 && <p role="status" className="mt-2 text-xs text-muted-foreground">No valid chronological test fold was available for this saved run. Evaluation metrics are unavailable.</p>}
           {selectedRun.dataLimitationWarning && <p role="status" className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-900">{selectedRun.dataLimitationWarning}</p>}
           {selectedRun.missingMonths.length > 0 && <p className="mt-2 text-xs text-orange-800">Data quality: missing reported months were not filled with zero: {selectedRun.missingMonths.join(', ')}</p>}
           {(selectedRun.overlapSystemMonthsExcluded ?? 0) > 0 && <p className="mt-2 text-xs text-orange-800">For overlapping imported/system months, imported revenue was used to avoid double-counting ({selectedRun.overlapMonthsUsingImportedOnly?.join(', ')}).</p>}
           <p className="mt-2 break-words text-xs text-muted-foreground">Model settings: {Object.entries(selectedRun.modelConfig).map(([key, value]) => `${key}=${value}`).join(' · ')}</p>
-          <div className="mt-6 h-[340px] w-full">{chartData.length ? <ResponsiveContainer width="100%" height="100%"><LineChart data={chartData} margin={{ top: 8, right: 18, left: 10, bottom: 8 }}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="period" tick={{ fontSize: 11 }} label={{ value: 'Month', position: 'insideBottom', offset: -4, fontSize: 12 }} /><YAxis tickFormatter={(value) => `₱${Number(value).toLocaleString()}`} tick={{ fontSize: 11 }} width={84} label={{ value: 'Monthly revenue (PHP)', angle: -90, position: 'insideLeft', fontSize: 12 }} /><Tooltip formatter={(value) => money(value == null ? null : Number(value))} /><Legend /><Line type="monotone" dataKey="actualRevenue" name="Actual Revenue" stroke="#477b62" strokeWidth={2.5} dot={{ r: 3 }} connectNulls /><Line type="monotone" dataKey="forecastRevenue" name="Forecast Revenue · XGBoost" stroke="#c47c35" strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 3 }} connectNulls /></LineChart></ResponsiveContainer> : <DatabaseLoading label="Loading revenue chart" />}</div>
+          <div className="mt-6 h-[340px] w-full">{chartData.length ? <ResponsiveContainer width="100%" height="100%"><LineChart data={chartData} margin={{ top: 8, right: 18, left: 10, bottom: 8 }}><CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /><XAxis dataKey="period" tick={{ fontSize: 11 }} label={{ value: 'Month', position: 'insideBottom', offset: -4, fontSize: 12 }} /><YAxis tickFormatter={(value) => `₱${Number(value).toLocaleString()}`} tick={{ fontSize: 11 }} width={84} label={{ value: 'Monthly revenue (PHP)', angle: -90, position: 'insideLeft', fontSize: 12 }} /><Tooltip formatter={(value) => money(value == null ? null : Number(value))} /><Legend /><Line type="monotone" dataKey="actualRevenue" name="Actual Revenue" stroke="#477b62" strokeWidth={2.5} dot={{ r: 3 }} connectNulls /><Line type="monotone" dataKey="forecastRevenue" name="Forecast Revenue · XGBoost" stroke="#c47c35" strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 3 }} connectNulls /></LineChart></ResponsiveContainer> : <p className="flex h-full items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">No monthly chart data is available for this saved run.</p>}</div>
         </section>
         <section className="rounded-2xl border border-border bg-card p-6 sm:p-8"><h3 className="font-serif text-2xl font-extrabold">Historical Evaluation Details</h3><p className="mt-2 text-sm text-muted-foreground">These are held-out historical months used for the accuracy metrics above. They are separate from the future forecast months shown in the chart.</p>{xgboostEvaluation?.evaluationPredictions?.length ? <><p className="mt-3 text-xs text-muted-foreground">XGBoost was fitted in each of {xgboostEvaluation.evaluationExecution?.evaluationFolds ?? 0} walk-forward evaluation fold(s); fallback used: {xgboostEvaluation.evaluationExecution?.fallbackUsed ? 'yes' : 'no'}{selectedRun.historicalEvaluationRecomputed ? ' · Details reproduced from saved monthly actuals; aggregate metrics and test window matched.' : ''}</p><div className="mt-4 overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead><tr className="border-b border-border font-mono text-[10px] uppercase text-muted-foreground"><th className="p-3">Test Month</th><th className="p-3">Actual Revenue (PHP)</th><th className="p-3">XGBoost Predicted Revenue (PHP)</th><th className="p-3">Absolute Error (PHP)</th><th className="p-3">Absolute Percentage Error (%)</th></tr></thead><tbody>{xgboostEvaluation.evaluationPredictions.map((row) => <tr key={row.period} className="border-b border-border/60"><td className="p-3">{row.period}</td><td className="p-3">{money(row.actualRevenue)}</td><td className="p-3">{money(row.predictedRevenue)}</td><td className="p-3">{money(row.absoluteError)}</td><td className="p-3">{row.absolutePercentageError == null ? '—' : `${row.absolutePercentageError.toFixed(6)}%`}</td></tr>)}</tbody></table></div></> : <p className="mt-4 rounded-lg bg-secondary/40 px-4 py-3 text-sm text-muted-foreground">This saved run has aggregate scores only. Month-level predictions are unavailable because its metrics could not be reproduced from the saved actuals.</p>}</section>
         <section className="rounded-2xl border border-border bg-card p-6 sm:p-8"><h3 className="font-serif text-2xl font-extrabold">Forecasting baseline comparison</h3><p className="mt-2 text-sm text-muted-foreground">Every method is evaluated on the same chronological test folds and {selectedRun.forecastHorizon}-month horizon. XGBoost is the selected implementation; metrics are reported without model-based favoritism.</p><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[850px] text-left text-sm"><thead><tr className="border-b border-border font-mono text-[10px] uppercase text-muted-foreground"><th className="p-3">Algorithm</th><th className="p-3">MAE (PHP)</th><th className="p-3">MAPE</th><th className="p-3">RMSE (PHP)</th><th className="p-3">Test observations</th><th className="p-3">Evaluation period</th></tr></thead><tbody>{selectedRun.modelComparisons.map((model) => <tr key={model.modelType} className="border-b border-border/60"><td className="p-3 font-semibold">{model.label}{model.selected && <span className="ml-2 rounded-full bg-secondary px-2 py-1 text-[10px]">Selected</span>}</td><td className="p-3">{money(model.metrics.mae)}</td><td className="p-3">{model.metrics.mape == null ? '—' : `${model.metrics.mape.toFixed(2)}%`}</td><td className="p-3">{money(model.metrics.rmse)}</td><td className="p-3">{model.metrics.testObservations}</td><td className="p-3">{model.evaluationPeriodStart ?? '—'} to {model.evaluationPeriodEnd ?? '—'}</td></tr>)}</tbody></table></div></section>
-      </> : <section className="rounded-2xl border border-dashed border-border p-8 text-center"><p className="font-serif text-xl font-bold">{loading ? 'Loading revenue forecast history…' : 'No revenue forecast is available yet.'}</p><p className="mt-2 text-sm text-muted-foreground">{loading ? ' ' : 'At least 4 consecutive observed months are required to fit a forecast. No sales records or zero months are invented.'}</p></section>}
+      </> : loading ? <section className="rounded-2xl border border-dashed border-border p-8 text-center"><DatabaseLoading label="Loading revenue forecast history" /></section> : error ? null : <section className="rounded-2xl border border-dashed border-border p-8 text-center"><p className="font-serif text-xl font-bold">No forecasting records are available yet.</p><p className="mt-2 text-sm text-muted-foreground">At least 4 consecutive observed months are required to fit a forecast. No sales records or zero months are invented.</p></section>}
 
-      <section className="rounded-2xl border border-border bg-card p-6 sm:p-8"><div className="flex items-center justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Saved runs</p><h3 className="mt-2 font-serif text-2xl font-extrabold">Revenue forecast history</h3></div><Button variant="outline" size="sm" disabled={loading} onClick={() => void refresh()}><RefreshCw size={14} /> Refresh</Button></div>{loading ? <DatabaseLoading className="mt-5" label="Loading saved forecasts" /> : revenueRuns.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">No saved revenue runs. Older quantity forecasts remain preserved in the database and are not presented as revenue.</p> : <div className="mt-4 space-y-2">{revenueRuns.map((run) => <button key={run.id} type="button" onClick={() => setSelectedRunId(run.id)} aria-pressed={run.id === selectedRun.id} className={`w-full rounded-lg border p-3 text-left ${run.id === selectedRun.id ? 'border-primary bg-secondary/40' : 'border-border'}`}><span className="font-semibold">{formatDate(run.createdAt)} · {run.forecastHorizon} months</span><span className="mt-1 block text-xs text-muted-foreground">{run.historicalStartDate} to {run.historicalEndDate} · {money(run.metrics.mae)} MAE · {run.testObservationCount} test observations</span></button>)}</div>}</section>
+      <section className="rounded-2xl border border-border bg-card p-6 sm:p-8"><div className="flex items-center justify-between gap-4"><div><p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Saved runs</p><h3 className="mt-2 font-serif text-2xl font-extrabold">Revenue forecast history</h3></div><Button variant="outline" size="sm" disabled={loading} onClick={() => void refresh()}><RefreshCw size={14} /> Refresh</Button></div>{loading ? <DatabaseLoading className="mt-5" label="Loading saved forecasts" /> : error && revenueRuns.length === 0 ? null : revenueRuns.length === 0 ? <p className="mt-4 text-sm text-muted-foreground">No saved revenue runs. Older quantity forecasts remain preserved in the database and are not presented as revenue.</p> : <div className="mt-4 space-y-2">{revenueRuns.map((run) => <button key={run.id} type="button" onClick={() => setSelectedRunId(run.id)} aria-pressed={run.id === selectedRun.id} className={`w-full rounded-lg border p-3 text-left ${run.id === selectedRun.id ? 'border-primary bg-secondary/40' : 'border-border'}`}><span className="font-semibold">{formatDate(run.createdAt)} · {run.forecastHorizon} months</span><span className="mt-1 block text-xs text-muted-foreground">{run.historicalStartDate ?? '—'} to {run.historicalEndDate ?? '—'} · {money(run.metrics.mae)} MAE · {run.testObservationCount} test observations</span></button>)}</div>}</section>
     </div>
   </AppShell>;
 }

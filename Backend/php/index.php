@@ -1035,6 +1035,13 @@ function route(string $method, string $path): void {
                 $evaluation['predictionTarget'] = 'monthly_sales_revenue_php';
                 $evaluation['forecastHorizon'] = (int)($run['forecast_horizon'] ?? 0);
                 $evaluation['modelType'] = (string)($run['model_type'] ?? 'xgboost');
+                $evaluation['historicalStartDate'] = $evaluation['historicalStartDate'] ?? ($run['historical_start_date'] ?? null);
+                $evaluation['historicalEndDate'] = $evaluation['historicalEndDate'] ?? ($run['historical_end_date'] ?? null);
+                $evaluation['modelLabel'] = $evaluation['modelLabel'] ?? match ((string)($run['model_type'] ?? 'xgboost')) {
+                    'linear_regression' => 'Linear Regression',
+                    'xgboost' => 'XGBoost',
+                    default => (string)($run['model_type'] ?? 'Forecast model'),
+                };
                 $evaluation['forecastMonthlyRevenue'] = $forecastRows;
                 $output[] = $evaluation;
                 continue;
