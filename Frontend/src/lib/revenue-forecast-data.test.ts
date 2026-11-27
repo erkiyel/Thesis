@@ -42,6 +42,31 @@ test('malformed optional arrays produce a controlled validation error', () => {
   );
 });
 
+test('one-step evaluations are parsed separately from fixed-origin comparisons', () => {
+  const run = normalizeRevenueRun({
+    id: 'temporal-run',
+    modelComparisons: [{
+      modelType: 'xgboost', label: 'XGBoost', forecastHorizon: 3,
+      metrics: { mae: 10, mape: 5, rmse: 12, testObservations: 3 },
+      evaluationPredictions: [],
+    }],
+    oneStepEvaluation: {
+      strategy: 'expanding_one_step_actual_observation_refit', horizon: 1,
+      evaluationPeriodStart: '2026-05', evaluationPeriodEnd: '2026-07',
+      models: [{
+        modelType: 'xgboost', label: 'XGBoost', forecastHorizon: 1,
+        metrics: { mae: 10, mape: 5, rmse: 12, testObservations: 3 },
+        evaluationPredictions: [{ originPeriod: '2026-04', horizon: 1, period: '2026-05', actualRevenue: 100, predictedRevenue: 90, absoluteError: 10, absolutePercentageError: 10 }],
+      }],
+    },
+  }, 0);
+
+  assert.equal(run.modelComparisons[0].forecastHorizon, 3);
+  assert.equal(run.oneStepEvaluation?.horizon, 1);
+  assert.equal(run.oneStepEvaluation?.models[0].evaluationPredictions?.[0].period, '2026-05');
+  assert.equal(run.oneStepEvaluation?.models[0].evaluationPredictions?.[0].originPeriod, '2026-04');
+});
+
 test('incomplete monthly data is rejected instead of inventing zero revenue', () => {
   assert.throws(
     () => normalizeRevenueRun({ id: 'bad-month', actualMonthlyRevenue: [{ period: '2026-05' }] }, 0),

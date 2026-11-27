@@ -82,9 +82,9 @@ class RevenueForecastTests(unittest.TestCase):
 
         with patch.object(revenue, "make_model", return_value=TestRegressor()):
             result = revenue.forecast(records, 3)
-        self.assertEqual(result["historicalStartDate"], "2025-09-01")
+        self.assertEqual(result["historicalStartDate"], "2025-01-01")
         self.assertEqual(result["historicalEndDate"], "2025-12-01")
-        self.assertEqual(result["trainingObservationCount"], 1)
+        self.assertEqual(result["trainingObservationCount"], 5)
         self.assertEqual(result["testObservationCount"], 0)
         self.assertIsNone(result["metrics"]["mae"])
         self.assertIsNone(result["metrics"]["mape"])
@@ -114,7 +114,7 @@ class RevenueForecastTests(unittest.TestCase):
         self.assertTrue(all(item["forecastRevenue"] >= 0 for item in result["forecastMonthlyRevenue"]))
         self.assertTrue(all(model["metrics"]["mae"] is None for model in result["modelComparisons"]))
 
-    def test_walk_forward_evaluates_all_models_on_same_three_month_period(self):
+    def test_fixed_origin_evaluates_all_models_on_same_three_month_blocks(self):
         class TestRegressor:
             def fit(self, _x, y):
                 self.mean_ = float(np.mean(y))
@@ -137,16 +137,95 @@ class RevenueForecastTests(unittest.TestCase):
         with patch.object(revenue, "make_model", side_effect=test_model):
             result = revenue.forecast(records, 3)
         self.assertEqual(result["modelType"], "xgboost")
-        self.assertEqual(result["evaluationMethod"], "chronological_walk_forward")
+        self.assertEqual(result["evaluationMethod"], "fixed_origin_recursive_horizon")
+        self.assertEqual(result["evaluationHorizon"], 3)
         self.assertEqual(result["metrics"]["testObservations"], 12)
         self.assertEqual({row["metrics"]["testObservations"] for row in result["modelComparisons"]}, {12})
         self.assertEqual({(row["evaluationPeriodStart"], row["evaluationPeriodEnd"]) for row in result["modelComparisons"]}, {(result["evaluationPeriodStart"], result["evaluationPeriodEnd"])})
         xgb = next(row for row in result["modelComparisons"] if row["modelType"] == "xgboost")
         self.assertEqual(len(xgb["evaluationPredictions"]), 12)
         self.assertEqual(xgb["evaluationExecution"]["evaluationFolds"], 4)
+        self.assertEqual(xgb["evaluationExecution"]["fitCountPerFold"], 1)
+        self.assertEqual(xgb["evaluationExecution"]["strategy"], "fixed_origin_single_fit_recursive")
         self.assertFalse(xgb["evaluationExecution"]["fallbackUsed"])
         self.assertTrue(all(row["absoluteError"] >= 0 for row in xgb["evaluationPredictions"]))
         self.assertEqual(len(result["forecastMonthlyRevenue"]), 3)
+
+    def test_expanding_one_step_naive_uses_each_preceding_actual(self):
+        records = []
+        start = revenue.month_number("2026-01")
+        actuals = [100, 120, 140, 160, 500, 300, 450, 700, 350]
+        for index, amount in enumerate(actuals):
+            records.append({"date": revenue.month_label(start + index) + "-01", "salesAmount": amount})
+
+        class TestRegressor:
+            def fit(self, _x, y):
+                self.mean_ = float(np.mean(y))
+                return self
+
+            def predict(self, x):
+                return np.full(len(x), self.mean_)
+
+        with patch.object(revenue, "make_model", return_value=TestRegressor()):
+            result = revenue.forecast(records, 3)
+        naive = next(model for model in result["oneStepEvaluation"]["models"] if model["modelType"] == "naive")
+        self.assertEqual([row["period"] for row in naive["evaluationPredictions"]], ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09"])
+        self.assertEqual([row["predictedRevenue"] for row in naive["evaluationPredictions"]], actuals[3:-1])
+        xgb = next(model for model in result["oneStepEvaluation"]["models"] if model["modelType"] == "xgboost")
+        self.assertEqual(xgb["evaluationExecution"]["fitCount"], 5)
+        self.assertTrue(all(
+            [row["period"] for row in model["evaluationPredictions"]]
+            == [row["period"] for row in naive["evaluationPredictions"]]
+            for model in result["oneStepEvaluation"]["models"]
+        ))
+        self.assertEqual(xgb["metrics"], revenue.regression_metrics(
+            [row["actualRevenue"] for row in xgb["evaluationPredictions"]],
+            [row["predictedRevenue"] for row in xgb["evaluationPredictions"]],
+        ))
+
+    def test_gap_does_not_bridge_one_step_lags(self):
+        start = revenue.month_number("2025-01")
+        records = [
+            {"date": revenue.month_label(start + index) + "-01", "salesAmount": 100 + index}
+            for index in range(12) if index != 7
+        ]
+
+        class TestRegressor:
+            def fit(self, _x, y):
+                self.mean_ = float(np.mean(y))
+                return self
+
+            def predict(self, x):
+                return np.full(len(x), self.mean_)
+
+        with patch.object(revenue, "make_model", return_value=TestRegressor()):
+            result = revenue.forecast(records, 3)
+        xgb = next(model for model in result["oneStepEvaluation"]["models"] if model["modelType"] == "xgboost")
+        self.assertEqual([row["period"] for row in xgb["evaluationPredictions"]], ["2025-05", "2025-06", "2025-07"])
+        self.assertNotIn("2025-09", [row["period"] for row in xgb["evaluationPredictions"]])
+
+    def test_two_month_fixed_origin_evaluation_can_be_separated_from_future_horizon(self):
+        records = []
+        start = revenue.month_number("2025-01")
+        for index in range(18):
+            records.append({"date": revenue.month_label(start + index) + "-01", "salesAmount": 1000 + index * 25})
+
+        class TestRegressor:
+            def fit(self, _x, y):
+                self.mean_ = float(np.mean(y))
+                return self
+
+            def predict(self, x):
+                return np.full(len(x), self.mean_)
+
+        original_make_model = revenue.make_model
+        with patch.object(revenue, "make_model", side_effect=lambda name: TestRegressor() if name in {"xgboost", "random_forest"} else original_make_model(name)):
+            result = revenue.forecast(records, 3, evaluation_horizon=2)
+        self.assertEqual(result["forecastHorizon"], 3)
+        self.assertEqual(result["evaluationHorizon"], 2)
+        self.assertEqual(len(result["forecastMonthlyRevenue"]), 3)
+        self.assertTrue(all(model["forecastHorizon"] == 2 for model in result["modelComparisons"]))
+        self.assertEqual({model["metrics"]["testObservations"] for model in result["modelComparisons"]}, {14})
 
 
 if __name__ == "__main__":

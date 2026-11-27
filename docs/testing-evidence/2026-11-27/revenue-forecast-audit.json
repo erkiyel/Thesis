@@ -1,0 +1,5727 @@
+{
+  "dataset": {
+    "inputFile": "JACDASH_Cleaned_Actual_Sales_2024_2026.xlsx",
+    "sha256": "b6999879c2afac6e43d19ed68e2cf59baaba2ff22269c12df34a59161745876d",
+    "worksheets": [
+      {
+        "name": "Overview",
+        "nonemptyRows": 20
+      },
+      {
+        "name": "Clean Sales Records",
+        "nonemptyRows": 226
+      },
+      {
+        "name": "Monthly Revenue",
+        "nonemptyRows": 36
+      },
+      {
+        "name": "Reference Documents",
+        "nonemptyRows": 83
+      },
+      {
+        "name": "Review Flags",
+        "nonemptyRows": 226
+      },
+      {
+        "name": "Excluded Cancellations",
+        "nonemptyRows": 6
+      }
+    ],
+    "cleanSalesRows": 226,
+    "includedTransactions": 222,
+    "excludedPossibleDuplicates": 2,
+    "excludedReviewRows": 2,
+    "invalidRows": 0,
+    "unresolvedReviewRows": 2,
+    "referenceDocumentRowsNotImported": 83,
+    "excludedCancellationRows": 6,
+    "statusCounts": {
+      "Included": 222,
+      "Possible duplicate—excluded": 2,
+      "Review—excluded": 2
+    },
+    "includedReferenceRepeatAudit": {
+      "PO": {
+        "repeatedReferenceGroups": 1,
+        "rowsInRepeatedGroups": 2,
+        "groupsWithSameAmountOnEveryRow": 1,
+        "groupsWithMultipleAmounts": 0
+      },
+      "SI": {
+        "repeatedReferenceGroups": 10,
+        "rowsInRepeatedGroups": 25,
+        "groupsWithSameAmountOnEveryRow": 3,
+        "groupsWithMultipleAmounts": 7
+      },
+      "DR": {
+        "repeatedReferenceGroups": 1,
+        "rowsInRepeatedGroups": 3,
+        "groupsWithSameAmountOnEveryRow": 0,
+        "groupsWithMultipleAmounts": 1
+      }
+    },
+    "observedMonths": 19,
+    "observedPeriodStart": "2024-02",
+    "observedPeriodEnd": "2026-08",
+    "transactionRevenueTotal": 12425321.5,
+    "monthlyRevenueTotal": 12425321.5,
+    "reconciliationErrors": [],
+    "monthlyRevenue": [
+      {
+        "month": "2024-02",
+        "revenue": 84000.0,
+        "records": 2,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2024-03",
+        "revenue": 58000.0,
+        "records": 2,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2024-04",
+        "revenue": 410000.0,
+        "records": 17,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2024-05",
+        "revenue": 253100.0,
+        "records": 11,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2024-06",
+        "revenue": 1058700.0,
+        "records": 4,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2024-07",
+        "revenue": 83100.0,
+        "records": 4,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2025-07",
+        "revenue": 432891.0,
+        "records": 21,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2025-08",
+        "revenue": 1647619.0,
+        "records": 27,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2025-09",
+        "revenue": 490753.0,
+        "records": 21,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2025-10",
+        "revenue": 2419454.0,
+        "records": 28,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2025-11",
+        "revenue": 73550.0,
+        "records": 4,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2026-01",
+        "revenue": 685355.0,
+        "records": 14,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2026-02",
+        "revenue": 118160.0,
+        "records": 12,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2026-03",
+        "revenue": 144552.5,
+        "records": 18,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2026-04",
+        "revenue": 708755.0,
+        "records": 19,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2026-05",
+        "revenue": 2094455.0,
+        "records": 3,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2026-06",
+        "revenue": 680000.0,
+        "records": 1,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2026-07",
+        "revenue": 945625.0,
+        "records": 13,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      },
+      {
+        "month": "2026-08",
+        "revenue": 37252.0,
+        "records": 1,
+        "coverage": "Records present",
+        "notes": "Partial month possible; check source"
+      }
+    ],
+    "interiorUnreportedMonths": [
+      "2024-08",
+      "2024-09",
+      "2024-10",
+      "2024-11",
+      "2024-12",
+      "2025-01",
+      "2025-02",
+      "2025-03",
+      "2025-04",
+      "2025-05",
+      "2025-06",
+      "2025-12"
+    ],
+    "otherUnreportedScheduleMonths": [
+      "2024-01",
+      "2026-09",
+      "2026-10",
+      "2026-11",
+      "2026-12"
+    ]
+  },
+  "forecast": {
+    "pythonCliSmoke": {
+      "command": "Backend\\.venv\\Scripts\\python.exe Backend\\python\\forecast.py (JSON stdin: revenue_forecast, horizon=3)",
+      "exitCode": 0,
+      "ok": true,
+      "forecastVersion": "revenue_xgboost_temporal_eval_v2",
+      "futureForecast": [
+        {
+          "period": "2026-09",
+          "forecastRevenue": 953770.94
+        },
+        {
+          "period": "2026-10",
+          "forecastRevenue": 694988.06
+        },
+        {
+          "period": "2026-11",
+          "forecastRevenue": 953770.94
+        }
+      ]
+    },
+    "legacyOneRowXgboostDiagnostic": {
+      "procedure": "Reproduction of the prior April-origin fit: contiguous-tail-only data and the single available lag target.",
+      "predictionForMay": 708755.0,
+      "period": "2026-05",
+      "trainingRowCount": 1,
+      "featureNames": [
+        "time_index",
+        "month_sin",
+        "month_cos",
+        "lag_1",
+        "lag_2",
+        "lag_3",
+        "mean_lag_3"
+      ],
+      "fitCount": 1,
+      "fallbackUsed": false,
+      "library": "xgboost",
+      "libraryVersion": "3.4.1",
+      "baseScore": "[7.08755E5]",
+      "modelDiagnosticsAvailable": true,
+      "treeCount": 30,
+      "leafNodeCount": 30,
+      "splitNodeCount": 0,
+      "treeStructure": [
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        },
+        {
+          "leafValue": 0.0
+        }
+      ],
+      "trainingRows": [
+        {
+          "targetPeriod": "2026-04",
+          "inputPeriods": [
+            "2026-01",
+            "2026-02",
+            "2026-03"
+          ],
+          "features": {
+            "time_index": 3.0,
+            "month_sin": 1.0,
+            "month_cos": 6.123233995736766e-17,
+            "lag_1": 144552.5,
+            "lag_2": 118160.0,
+            "lag_3": 685355.0,
+            "mean_lag_3": 316022.5
+          },
+          "targetRevenue": 708755.0
+        }
+      ]
+    },
+    "legacyRecursiveReproduction": {
+      "xgboost": [
+        {
+          "period": "2026-05",
+          "trainingRowCount": 1,
+          "trainingTargets": [
+            708755.0
+          ],
+          "prediction": 708755.0,
+          "fit": {
+            "period": "2026-05",
+            "trainingRowCount": 1,
+            "featureNames": [
+              "time_index",
+              "month_sin",
+              "month_cos",
+              "lag_1",
+              "lag_2",
+              "lag_3",
+              "mean_lag_3"
+            ],
+            "fitCount": 1,
+            "fallbackUsed": false,
+            "library": "xgboost",
+            "libraryVersion": "3.4.1",
+            "baseScore": "[7.08755E5]",
+            "modelDiagnosticsAvailable": true,
+            "treeCount": 30,
+            "leafNodeCount": 30,
+            "splitNodeCount": 0,
+            "treeStructure": [
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              }
+            ],
+            "trainingRows": []
+          }
+        },
+        {
+          "period": "2026-06",
+          "trainingRowCount": 2,
+          "trainingTargets": [
+            708755.0,
+            708755.0
+          ],
+          "prediction": 708755.0,
+          "fit": {
+            "period": "2026-06",
+            "trainingRowCount": 2,
+            "featureNames": [
+              "time_index",
+              "month_sin",
+              "month_cos",
+              "lag_1",
+              "lag_2",
+              "lag_3",
+              "mean_lag_3"
+            ],
+            "fitCount": 1,
+            "fallbackUsed": false,
+            "library": "xgboost",
+            "libraryVersion": "3.4.1",
+            "baseScore": "[7.08755E5]",
+            "modelDiagnosticsAvailable": true,
+            "treeCount": 30,
+            "leafNodeCount": 30,
+            "splitNodeCount": 0,
+            "treeStructure": [
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              }
+            ],
+            "trainingRows": []
+          }
+        },
+        {
+          "period": "2026-07",
+          "trainingRowCount": 3,
+          "trainingTargets": [
+            708755.0,
+            708755.0,
+            708755.0
+          ],
+          "prediction": 708755.0,
+          "fit": {
+            "period": "2026-07",
+            "trainingRowCount": 3,
+            "featureNames": [
+              "time_index",
+              "month_sin",
+              "month_cos",
+              "lag_1",
+              "lag_2",
+              "lag_3",
+              "mean_lag_3"
+            ],
+            "fitCount": 1,
+            "fallbackUsed": false,
+            "library": "xgboost",
+            "libraryVersion": "3.4.1",
+            "baseScore": "[7.08755E5]",
+            "modelDiagnosticsAvailable": true,
+            "treeCount": 30,
+            "leafNodeCount": 30,
+            "splitNodeCount": 0,
+            "treeStructure": [
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              },
+              {
+                "leafValue": 0.0
+              }
+            ],
+            "trainingRows": []
+          }
+        }
+      ],
+      "random_forest": [
+        {
+          "period": "2026-05",
+          "trainingRowCount": 1,
+          "trainingTargets": [
+            708755.0
+          ],
+          "treeCount": 100,
+          "prediction": 708755.0,
+          "fallbackUsed": false
+        },
+        {
+          "period": "2026-06",
+          "trainingRowCount": 2,
+          "trainingTargets": [
+            708755.0,
+            708755.0
+          ],
+          "treeCount": 100,
+          "prediction": 708755.0,
+          "fallbackUsed": false
+        },
+        {
+          "period": "2026-07",
+          "trainingRowCount": 3,
+          "trainingTargets": [
+            708755.0,
+            708755.0,
+            708755.0
+          ],
+          "treeCount": 100,
+          "prediction": 708755.0,
+          "fallbackUsed": false
+        }
+      ],
+      "naive": [
+        {
+          "period": "2026-05",
+          "trainingRowCount": 0,
+          "prediction": 708755.0,
+          "fallbackUsed": false
+        },
+        {
+          "period": "2026-06",
+          "trainingRowCount": 0,
+          "prediction": 708755.0,
+          "fallbackUsed": false
+        },
+        {
+          "period": "2026-07",
+          "trainingRowCount": 0,
+          "prediction": 708755.0,
+          "fallbackUsed": false
+        }
+      ]
+    },
+    "version": "revenue_xgboost_temporal_eval_v2",
+    "horizon": 3,
+    "xgboostConfig": {
+      "objective": "reg:squarederror",
+      "n_estimators": 30,
+      "max_depth": 1,
+      "learning_rate": 0.03,
+      "min_child_weight": 1,
+      "subsample": 1.0,
+      "colsample_bytree": 1.0,
+      "reg_lambda": 10.0,
+      "reg_alpha": 0.0,
+      "random_state": 42,
+      "n_jobs": 1,
+      "tree_method": "hist",
+      "seed": 42
+    },
+    "runtimeVersions": {
+      "python": "3.14.0",
+      "numpy": "2.5.3",
+      "xgboost": "3.4.1"
+    },
+    "featureNames": [
+      "time_index",
+      "month_sin",
+      "month_cos",
+      "lag_1",
+      "lag_2",
+      "lag_3",
+      "mean_lag_3"
+    ],
+    "validLagTrainingRows": 10,
+    "dataLimitationWarning": "Limited history: the forecasting context contains 8 consecutive monthly observations; the model trains on 10 valid lagged row(s) across observed contiguous periods. Forecast reliability may be reduced.",
+    "oneStepEvaluation": {
+      "strategy": "expanding_one_step_actual_observation_refit",
+      "periodStart": "2024-06",
+      "periodEnd": "2026-08",
+      "models": {
+        "xgboost": {
+          "metrics": {
+            "mae": 717311.84,
+            "mape": 694.84,
+            "rmse": 843021.75,
+            "testObservations": 7,
+            "mapeSamples": 7,
+            "zeroActualObservations": 0
+          },
+          "predictions": [
+            {
+              "originPeriod": "2024-05",
+              "horizon": 1,
+              "period": "2024-06",
+              "actualRevenue": 1058700.0,
+              "predictedRevenue": 253100.0,
+              "absoluteError": 805600.0,
+              "absolutePercentageError": 76.093322
+            },
+            {
+              "originPeriod": "2024-06",
+              "horizon": 1,
+              "period": "2024-07",
+              "actualRevenue": 83100.0,
+              "predictedRevenue": 687585.69,
+              "absoluteError": 604485.69,
+              "absolutePercentageError": 727.419603
+            },
+            {
+              "originPeriod": "2025-10",
+              "horizon": 1,
+              "period": "2025-11",
+              "actualRevenue": 73550.0,
+              "predictedRevenue": 1063574.75,
+              "absoluteError": 990024.75,
+              "absolutePercentageError": 1346.056764
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 1,
+              "period": "2026-05",
+              "actualRevenue": 2094455.0,
+              "predictedRevenue": 680036.75,
+              "absoluteError": 1414418.25,
+              "absolutePercentageError": 67.531565
+            },
+            {
+              "originPeriod": "2026-05",
+              "horizon": 1,
+              "period": "2026-06",
+              "actualRevenue": 680000.0,
+              "predictedRevenue": 836113.81,
+              "absoluteError": 156113.81,
+              "absolutePercentageError": 22.957913
+            },
+            {
+              "originPeriod": "2026-06",
+              "horizon": 1,
+              "period": "2026-07",
+              "actualRevenue": 945625.0,
+              "predictedRevenue": 1021735.75,
+              "absoluteError": 76110.75,
+              "absolutePercentageError": 8.048724
+            },
+            {
+              "originPeriod": "2026-07",
+              "horizon": 1,
+              "period": "2026-08",
+              "actualRevenue": 37252.0,
+              "predictedRevenue": 1011681.62,
+              "absoluteError": 974429.62,
+              "absolutePercentageError": 2615.777998
+            }
+          ],
+          "execution": {
+            "strategy": "expanding_one_step_refit",
+            "evaluationFolds": 7,
+            "trainingRowsByFoldAndStep": [
+              [
+                1
+              ],
+              [
+                2
+              ],
+              [
+                4
+              ],
+              [
+                6
+              ],
+              [
+                7
+              ],
+              [
+                8
+              ],
+              [
+                9
+              ]
+            ],
+            "fitCount": 7,
+            "foldDetails": [
+              {
+                "period": "2024-06",
+                "trainingRowCount": 1,
+                "featureNames": [
+                  "time_index",
+                  "month_sin",
+                  "month_cos",
+                  "lag_1",
+                  "lag_2",
+                  "lag_3",
+                  "mean_lag_3"
+                ],
+                "fitCount": 1,
+                "fallbackUsed": false,
+                "library": "xgboost",
+                "libraryVersion": "3.4.1",
+                "baseScore": "[2.531E5]",
+                "modelDiagnosticsAvailable": true,
+                "treeCount": 30,
+                "leafNodeCount": 30,
+                "splitNodeCount": 0,
+                "treeStructure": [
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  },
+                  {
+                    "leafValue": 0.0
+                  }
+                ],
+                "trainingRows": [
+                  {
+                    "targetPeriod": "2024-05",
+                    "inputPeriods": [
+                      "2024-02",
+                      "2024-03",
+                      "2024-04"
+                    ],
+                    "features": {
+                      "time_index": 3.0,
+                      "month_sin": 0.8660254037844387,
+                      "month_cos": -0.4999999999999998,
+                      "lag_1": 410000.0,
+                      "lag_2": 58000.0,
+                      "lag_3": 84000.0,
+                      "mean_lag_3": 184000.0
+                    },
+                    "targetRevenue": 253100.0
+                  }
+                ],
+                "originPeriod": "2024-05",
+                "horizon": 1
+              },
+              {
+                "period": "2024-07",
+                "trainingRowCount": 2,
+                "featureNames": [
+                  "time_index",
+                  "month_sin",
+                  "month_cos",
+                  "lag_1",
+                  "lag_2",
+                  "lag_3",
+                  "mean_lag_3"
+                ],
+                "fitCount": 1,
+                "fallbackUsed": false,
+                "library": "xgboost",
+                "libraryVersion": "3.4.1",
+                "baseScore": "[6.559E5]",
+                "modelDiagnosticsAvailable": true,
+                "treeCount": 30,
+                "leafNodeCount": 60,
+                "splitNodeCount": 30,
+                "treeStructure": [
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1098.54553
+                      },
+                      {
+                        "leafValue": 1098.54553
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1095.54932
+                      },
+                      {
+                        "leafValue": 1095.54932
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1092.5614
+                      },
+                      {
+                        "leafValue": 1092.5614
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1089.58167
+                      },
+                      {
+                        "leafValue": 1089.58167
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1086.61023
+                      },
+                      {
+                        "leafValue": 1086.61023
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1083.64673
+                      },
+                      {
+                        "leafValue": 1083.64673
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1080.69141
+                      },
+                      {
+                        "leafValue": 1080.69141
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1077.74402
+                      },
+                      {
+                        "leafValue": 1077.74402
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1074.80469
+                      },
+                      {
+                        "leafValue": 1074.80469
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1071.87341
+                      },
+                      {
+                        "leafValue": 1071.87341
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1068.95007
+                      },
+                      {
+                        "leafValue": 1068.95007
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1066.03491
+                      },
+                      {
+                        "leafValue": 1066.03491
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1063.12732
+                      },
+                      {
+                        "leafValue": 1063.12732
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1060.22803
+                      },
+                      {
+                        "leafValue": 1060.22803
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1057.33643
+                      },
+                      {
+                        "leafValue": 1057.33643
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1054.45276
+                      },
+                      {
+                        "leafValue": 1054.45276
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1051.57703
+                      },
+                      {
+                        "leafValue": 1051.57703
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1048.70911
+                      },
+                      {
+                        "leafValue": 1048.70911
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1045.84912
+                      },
+                      {
+                        "leafValue": 1045.84912
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1042.9967
+                      },
+                      {
+                        "leafValue": 1042.9967
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1040.1521
+                      },
+                      {
+                        "leafValue": 1040.1521
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1037.31543
+                      },
+                      {
+                        "leafValue": 1037.31543
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1034.48633
+                      },
+                      {
+                        "leafValue": 1034.48633
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1031.66504
+                      },
+                      {
+                        "leafValue": 1031.66504
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1028.85144
+                      },
+                      {
+                        "leafValue": 1028.85144
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1026.04529
+                      },
+                      {
+                        "leafValue": 1026.04529
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1023.24701
+                      },
+                      {
+                        "leafValue": 1023.24701
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1020.4563
+                      },
+                      {
+                        "leafValue": 1020.4563
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1017.67322
+                      },
+                      {
+                        "leafValue": 1017.67322
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 4.0,
+                    "children": [
+                      {
+                        "leafValue": -1014.89777
+                      },
+                      {
+                        "leafValue": 1014.89777
+                      }
+                    ]
+                  }
+                ],
+                "trainingRows": [
+                  {
+                    "targetPeriod": "2024-05",
+                    "inputPeriods": [
+                      "2024-02",
+                      "2024-03",
+                      "2024-04"
+                    ],
+                    "features": {
+                      "time_index": 3.0,
+                      "month_sin": 0.8660254037844387,
+                      "month_cos": -0.4999999999999998,
+                      "lag_1": 410000.0,
+                      "lag_2": 58000.0,
+                      "lag_3": 84000.0,
+                      "mean_lag_3": 184000.0
+                    },
+                    "targetRevenue": 253100.0
+                  },
+                  {
+                    "targetPeriod": "2024-06",
+                    "inputPeriods": [
+                      "2024-03",
+                      "2024-04",
+                      "2024-05"
+                    ],
+                    "features": {
+                      "time_index": 4.0,
+                      "month_sin": 0.49999999999999994,
+                      "month_cos": -0.8660254037844387,
+                      "lag_1": 253100.0,
+                      "lag_2": 410000.0,
+                      "lag_3": 58000.0,
+                      "mean_lag_3": 240366.66666666666
+                    },
+                    "targetRevenue": 1058700.0
+                  }
+                ],
+                "originPeriod": "2024-06",
+                "horizon": 1
+              },
+              {
+                "period": "2025-11",
+                "trainingRowCount": 4,
+                "featureNames": [
+                  "time_index",
+                  "month_sin",
+                  "month_cos",
+                  "lag_1",
+                  "lag_2",
+                  "lag_3",
+                  "mean_lag_3"
+                ],
+                "fitCount": 1,
+                "fallbackUsed": false,
+                "library": "xgboost",
+                "libraryVersion": "3.4.1",
+                "baseScore": "[9.535885E5]",
+                "modelDiagnosticsAvailable": true,
+                "treeCount": 30,
+                "leafNodeCount": 60,
+                "splitNodeCount": 30,
+                "treeStructure": [
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3927.44238
+                      },
+                      {
+                        "leafValue": 3927.44238
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3907.80542
+                      },
+                      {
+                        "leafValue": 3907.80518
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3888.26611
+                      },
+                      {
+                        "leafValue": 3888.26611
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3868.82495
+                      },
+                      {
+                        "leafValue": 3868.82495
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3849.48096
+                      },
+                      {
+                        "leafValue": 3849.4812
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3830.23315
+                      },
+                      {
+                        "leafValue": 3830.2334
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3811.08203
+                      },
+                      {
+                        "leafValue": 3811.08228
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3792.02686
+                      },
+                      {
+                        "leafValue": 3792.02686
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3773.06689
+                      },
+                      {
+                        "leafValue": 3773.06689
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3754.20166
+                      },
+                      {
+                        "leafValue": 3754.20142
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3735.43042
+                      },
+                      {
+                        "leafValue": 3735.43042
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3716.75342
+                      },
+                      {
+                        "leafValue": 3716.75366
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3698.16943
+                      },
+                      {
+                        "leafValue": 3698.16968
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3679.67871
+                      },
+                      {
+                        "leafValue": 3679.67871
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3661.28027
+                      },
+                      {
+                        "leafValue": 3661.28003
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3642.97388
+                      },
+                      {
+                        "leafValue": 3642.97363
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3624.75903
+                      },
+                      {
+                        "leafValue": 3624.75879
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3606.63525
+                      },
+                      {
+                        "leafValue": 3606.63501
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3588.60205
+                      },
+                      {
+                        "leafValue": 3588.60229
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3570.65894
+                      },
+                      {
+                        "leafValue": 3570.65869
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3552.80542
+                      },
+                      {
+                        "leafValue": 3552.80542
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3535.0415
+                      },
+                      {
+                        "leafValue": 3535.04126
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3517.36621
+                      },
+                      {
+                        "leafValue": 3517.36621
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3499.7793
+                      },
+                      {
+                        "leafValue": 3499.7793
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3482.28052
+                      },
+                      {
+                        "leafValue": 3482.28052
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3464.86938
+                      },
+                      {
+                        "leafValue": 3464.86938
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3447.54492
+                      },
+                      {
+                        "leafValue": 3447.54492
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3430.30713
+                      },
+                      {
+                        "leafValue": 3430.30762
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "time_index",
+                    "splitCondition": 20.0,
+                    "children": [
+                      {
+                        "leafValue": -3145.40283
+                      },
+                      {
+                        "leafValue": 3717.29517
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_2",
+                    "splitCondition": 410000.0,
+                    "children": [
+                      {
+                        "leafValue": -3397.42871
+                      },
+                      {
+                        "leafValue": 3411.72656
+                      }
+                    ]
+                  }
+                ],
+                "trainingRows": [
+                  {
+                    "targetPeriod": "2024-05",
+                    "inputPeriods": [
+                      "2024-02",
+                      "2024-03",
+                      "2024-04"
+                    ],
+                    "features": {
+                      "time_index": 3.0,
+                      "month_sin": 0.8660254037844387,
+                      "month_cos": -0.4999999999999998,
+                      "lag_1": 410000.0,
+                      "lag_2": 58000.0,
+                      "lag_3": 84000.0,
+                      "mean_lag_3": 184000.0
+                    },
+                    "targetRevenue": 253100.0
+                  },
+                  {
+                    "targetPeriod": "2024-06",
+                    "inputPeriods": [
+                      "2024-03",
+                      "2024-04",
+                      "2024-05"
+                    ],
+                    "features": {
+                      "time_index": 4.0,
+                      "month_sin": 0.49999999999999994,
+                      "month_cos": -0.8660254037844387,
+                      "lag_1": 253100.0,
+                      "lag_2": 410000.0,
+                      "lag_3": 58000.0,
+                      "mean_lag_3": 240366.66666666666
+                    },
+                    "targetRevenue": 1058700.0
+                  },
+                  {
+                    "targetPeriod": "2024-07",
+                    "inputPeriods": [
+                      "2024-04",
+                      "2024-05",
+                      "2024-06"
+                    ],
+                    "features": {
+                      "time_index": 5.0,
+                      "month_sin": 1.2246467991473532e-16,
+                      "month_cos": -1.0,
+                      "lag_1": 1058700.0,
+                      "lag_2": 253100.0,
+                      "lag_3": 410000.0,
+                      "mean_lag_3": 573933.3333333334
+                    },
+                    "targetRevenue": 83100.0
+                  },
+                  {
+                    "targetPeriod": "2025-10",
+                    "inputPeriods": [
+                      "2025-07",
+                      "2025-08",
+                      "2025-09"
+                    ],
+                    "features": {
+                      "time_index": 20.0,
+                      "month_sin": -1.0,
+                      "month_cos": -1.8369701987210297e-16,
+                      "lag_1": 490753.0,
+                      "lag_2": 1647619.0,
+                      "lag_3": 432891.0,
+                      "mean_lag_3": 857087.6666666666
+                    },
+                    "targetRevenue": 2419454.0
+                  }
+                ],
+                "originPeriod": "2025-10",
+                "horizon": 1
+              },
+              {
+                "period": "2026-05",
+                "trainingRowCount": 6,
+                "featureNames": [
+                  "time_index",
+                  "month_sin",
+                  "month_cos",
+                  "lag_1",
+                  "lag_2",
+                  "lag_3",
+                  "mean_lag_3"
+                ],
+                "fitCount": 1,
+                "fallbackUsed": false,
+                "library": "xgboost",
+                "libraryVersion": "3.4.1",
+                "baseScore": "[7.661098E5]",
+                "modelDiagnosticsAvailable": true,
+                "treeCount": 30,
+                "leafNodeCount": 60,
+                "splitNodeCount": 30,
+                "treeStructure": [
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4509.12061
+                      },
+                      {
+                        "leafValue": -3306.68799
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4496.82275
+                      },
+                      {
+                        "leafValue": -3273.62134
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4484.55859
+                      },
+                      {
+                        "leafValue": -3240.88501
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4472.32812
+                      },
+                      {
+                        "leafValue": -3208.47632
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4460.13086
+                      },
+                      {
+                        "leafValue": -3176.39136
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4447.9668
+                      },
+                      {
+                        "leafValue": -3144.62744
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4435.83594
+                      },
+                      {
+                        "leafValue": -3113.18115
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4423.73828
+                      },
+                      {
+                        "leafValue": -3082.04932
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4411.67383
+                      },
+                      {
+                        "leafValue": -3051.22876
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4399.64209
+                      },
+                      {
+                        "leafValue": -3020.71606
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4387.64307
+                      },
+                      {
+                        "leafValue": -2990.50928
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4375.67676
+                      },
+                      {
+                        "leafValue": -2960.60425
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4363.74316
+                      },
+                      {
+                        "leafValue": -2930.99805
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4351.8418
+                      },
+                      {
+                        "leafValue": -2901.68799
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4339.97266
+                      },
+                      {
+                        "leafValue": -2872.67114
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4328.13672
+                      },
+                      {
+                        "leafValue": -2843.94434
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4316.33301
+                      },
+                      {
+                        "leafValue": -2815.50488
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4304.56104
+                      },
+                      {
+                        "leafValue": -2787.34985
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4292.82129
+                      },
+                      {
+                        "leafValue": -2759.47607
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4281.11377
+                      },
+                      {
+                        "leafValue": -2731.88135
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4269.43799
+                      },
+                      {
+                        "leafValue": -2704.5625
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4257.79443
+                      },
+                      {
+                        "leafValue": -2677.51685
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4246.18164
+                      },
+                      {
+                        "leafValue": -2650.7417
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4234.60156
+                      },
+                      {
+                        "leafValue": -2624.23413
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4223.05225
+                      },
+                      {
+                        "leafValue": -2597.9917
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4211.53467
+                      },
+                      {
+                        "leafValue": -2572.01172
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4200.04932
+                      },
+                      {
+                        "leafValue": -2546.29199
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4188.59424
+                      },
+                      {
+                        "leafValue": -2520.82861
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4177.17041
+                      },
+                      {
+                        "leafValue": -2495.62061
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4165.77783
+                      },
+                      {
+                        "leafValue": -2470.66431
+                      }
+                    ]
+                  }
+                ],
+                "trainingRows": [
+                  {
+                    "targetPeriod": "2024-05",
+                    "inputPeriods": [
+                      "2024-02",
+                      "2024-03",
+                      "2024-04"
+                    ],
+                    "features": {
+                      "time_index": 3.0,
+                      "month_sin": 0.8660254037844387,
+                      "month_cos": -0.4999999999999998,
+                      "lag_1": 410000.0,
+                      "lag_2": 58000.0,
+                      "lag_3": 84000.0,
+                      "mean_lag_3": 184000.0
+                    },
+                    "targetRevenue": 253100.0
+                  },
+                  {
+                    "targetPeriod": "2024-06",
+                    "inputPeriods": [
+                      "2024-03",
+                      "2024-04",
+                      "2024-05"
+                    ],
+                    "features": {
+                      "time_index": 4.0,
+                      "month_sin": 0.49999999999999994,
+                      "month_cos": -0.8660254037844387,
+                      "lag_1": 253100.0,
+                      "lag_2": 410000.0,
+                      "lag_3": 58000.0,
+                      "mean_lag_3": 240366.66666666666
+                    },
+                    "targetRevenue": 1058700.0
+                  },
+                  {
+                    "targetPeriod": "2024-07",
+                    "inputPeriods": [
+                      "2024-04",
+                      "2024-05",
+                      "2024-06"
+                    ],
+                    "features": {
+                      "time_index": 5.0,
+                      "month_sin": 1.2246467991473532e-16,
+                      "month_cos": -1.0,
+                      "lag_1": 1058700.0,
+                      "lag_2": 253100.0,
+                      "lag_3": 410000.0,
+                      "mean_lag_3": 573933.3333333334
+                    },
+                    "targetRevenue": 83100.0
+                  },
+                  {
+                    "targetPeriod": "2025-10",
+                    "inputPeriods": [
+                      "2025-07",
+                      "2025-08",
+                      "2025-09"
+                    ],
+                    "features": {
+                      "time_index": 20.0,
+                      "month_sin": -1.0,
+                      "month_cos": -1.8369701987210297e-16,
+                      "lag_1": 490753.0,
+                      "lag_2": 1647619.0,
+                      "lag_3": 432891.0,
+                      "mean_lag_3": 857087.6666666666
+                    },
+                    "targetRevenue": 2419454.0
+                  },
+                  {
+                    "targetPeriod": "2025-11",
+                    "inputPeriods": [
+                      "2025-08",
+                      "2025-09",
+                      "2025-10"
+                    ],
+                    "features": {
+                      "time_index": 21.0,
+                      "month_sin": -0.8660254037844386,
+                      "month_cos": 0.5000000000000001,
+                      "lag_1": 2419454.0,
+                      "lag_2": 490753.0,
+                      "lag_3": 1647619.0,
+                      "mean_lag_3": 1519275.3333333333
+                    },
+                    "targetRevenue": 73550.0
+                  },
+                  {
+                    "targetPeriod": "2026-04",
+                    "inputPeriods": [
+                      "2026-01",
+                      "2026-02",
+                      "2026-03"
+                    ],
+                    "features": {
+                      "time_index": 26.0,
+                      "month_sin": 1.0,
+                      "month_cos": 6.123233995736766e-17,
+                      "lag_1": 144552.5,
+                      "lag_2": 118160.0,
+                      "lag_3": 685355.0,
+                      "mean_lag_3": 316022.5
+                    },
+                    "targetRevenue": 708755.0
+                  }
+                ],
+                "originPeriod": "2026-04",
+                "horizon": 1
+              },
+              {
+                "period": "2026-06",
+                "trainingRowCount": 7,
+                "featureNames": [
+                  "time_index",
+                  "month_sin",
+                  "month_cos",
+                  "lag_1",
+                  "lag_2",
+                  "lag_3",
+                  "mean_lag_3"
+                ],
+                "fitCount": 1,
+                "fallbackUsed": false,
+                "library": "xgboost",
+                "libraryVersion": "3.4.1",
+                "baseScore": "[9.5587344E5]",
+                "modelDiagnosticsAvailable": true,
+                "treeCount": 30,
+                "leafNodeCount": 60,
+                "splitNodeCount": 30,
+                "treeStructure": [
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3510.19336
+                      },
+                      {
+                        "leafValue": -4387.74219
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3475.09155
+                      },
+                      {
+                        "leafValue": -4365.80322
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3440.34082
+                      },
+                      {
+                        "leafValue": -4343.97412
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3405.93799
+                      },
+                      {
+                        "leafValue": -4322.25391
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3371.87817
+                      },
+                      {
+                        "leafValue": -4300.64307
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3338.16016
+                      },
+                      {
+                        "leafValue": -4279.14014
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3304.77783
+                      },
+                      {
+                        "leafValue": -4257.74414
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3271.73022
+                      },
+                      {
+                        "leafValue": -4236.45557
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3239.01294
+                      },
+                      {
+                        "leafValue": -4215.27295
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3206.6228
+                      },
+                      {
+                        "leafValue": -4194.19727
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3174.55664
+                      },
+                      {
+                        "leafValue": -4173.22607
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3142.81079
+                      },
+                      {
+                        "leafValue": -4152.35986
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3111.38281
+                      },
+                      {
+                        "leafValue": -4131.59814
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3080.26904
+                      },
+                      {
+                        "leafValue": -4110.93994
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3049.46655
+                      },
+                      {
+                        "leafValue": -4090.38501
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3018.97266
+                      },
+                      {
+                        "leafValue": -4069.93359
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2988.78247
+                      },
+                      {
+                        "leafValue": -4049.58374
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2958.89404
+                      },
+                      {
+                        "leafValue": -4029.33594
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2929.30542
+                      },
+                      {
+                        "leafValue": -4009.18921
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2900.01245
+                      },
+                      {
+                        "leafValue": -3989.14355
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2871.0127
+                      },
+                      {
+                        "leafValue": -3969.19775
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2842.30249
+                      },
+                      {
+                        "leafValue": -3949.35181
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2813.87915
+                      },
+                      {
+                        "leafValue": -3929.60498
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2785.74048
+                      },
+                      {
+                        "leafValue": -3909.95679
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2757.88281
+                      },
+                      {
+                        "leafValue": -3890.40723
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 3778.88623
+                      },
+                      {
+                        "leafValue": -2941.54028
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2746.27905
+                      },
+                      {
+                        "leafValue": -3856.24707
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 3761.09033
+                      },
+                      {
+                        "leafValue": -2914.58325
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 3750.83301
+                      },
+                      {
+                        "leafValue": -2881.79468
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2750.16357
+                      },
+                      {
+                        "leafValue": -3807.98413
+                      }
+                    ]
+                  }
+                ],
+                "trainingRows": [
+                  {
+                    "targetPeriod": "2024-05",
+                    "inputPeriods": [
+                      "2024-02",
+                      "2024-03",
+                      "2024-04"
+                    ],
+                    "features": {
+                      "time_index": 3.0,
+                      "month_sin": 0.8660254037844387,
+                      "month_cos": -0.4999999999999998,
+                      "lag_1": 410000.0,
+                      "lag_2": 58000.0,
+                      "lag_3": 84000.0,
+                      "mean_lag_3": 184000.0
+                    },
+                    "targetRevenue": 253100.0
+                  },
+                  {
+                    "targetPeriod": "2024-06",
+                    "inputPeriods": [
+                      "2024-03",
+                      "2024-04",
+                      "2024-05"
+                    ],
+                    "features": {
+                      "time_index": 4.0,
+                      "month_sin": 0.49999999999999994,
+                      "month_cos": -0.8660254037844387,
+                      "lag_1": 253100.0,
+                      "lag_2": 410000.0,
+                      "lag_3": 58000.0,
+                      "mean_lag_3": 240366.66666666666
+                    },
+                    "targetRevenue": 1058700.0
+                  },
+                  {
+                    "targetPeriod": "2024-07",
+                    "inputPeriods": [
+                      "2024-04",
+                      "2024-05",
+                      "2024-06"
+                    ],
+                    "features": {
+                      "time_index": 5.0,
+                      "month_sin": 1.2246467991473532e-16,
+                      "month_cos": -1.0,
+                      "lag_1": 1058700.0,
+                      "lag_2": 253100.0,
+                      "lag_3": 410000.0,
+                      "mean_lag_3": 573933.3333333334
+                    },
+                    "targetRevenue": 83100.0
+                  },
+                  {
+                    "targetPeriod": "2025-10",
+                    "inputPeriods": [
+                      "2025-07",
+                      "2025-08",
+                      "2025-09"
+                    ],
+                    "features": {
+                      "time_index": 20.0,
+                      "month_sin": -1.0,
+                      "month_cos": -1.8369701987210297e-16,
+                      "lag_1": 490753.0,
+                      "lag_2": 1647619.0,
+                      "lag_3": 432891.0,
+                      "mean_lag_3": 857087.6666666666
+                    },
+                    "targetRevenue": 2419454.0
+                  },
+                  {
+                    "targetPeriod": "2025-11",
+                    "inputPeriods": [
+                      "2025-08",
+                      "2025-09",
+                      "2025-10"
+                    ],
+                    "features": {
+                      "time_index": 21.0,
+                      "month_sin": -0.8660254037844386,
+                      "month_cos": 0.5000000000000001,
+                      "lag_1": 2419454.0,
+                      "lag_2": 490753.0,
+                      "lag_3": 1647619.0,
+                      "mean_lag_3": 1519275.3333333333
+                    },
+                    "targetRevenue": 73550.0
+                  },
+                  {
+                    "targetPeriod": "2026-04",
+                    "inputPeriods": [
+                      "2026-01",
+                      "2026-02",
+                      "2026-03"
+                    ],
+                    "features": {
+                      "time_index": 26.0,
+                      "month_sin": 1.0,
+                      "month_cos": 6.123233995736766e-17,
+                      "lag_1": 144552.5,
+                      "lag_2": 118160.0,
+                      "lag_3": 685355.0,
+                      "mean_lag_3": 316022.5
+                    },
+                    "targetRevenue": 708755.0
+                  },
+                  {
+                    "targetPeriod": "2026-05",
+                    "inputPeriods": [
+                      "2026-02",
+                      "2026-03",
+                      "2026-04"
+                    ],
+                    "features": {
+                      "time_index": 27.0,
+                      "month_sin": 0.8660254037844387,
+                      "month_cos": -0.4999999999999998,
+                      "lag_1": 708755.0,
+                      "lag_2": 144552.5,
+                      "lag_3": 118160.0,
+                      "mean_lag_3": 323822.5
+                    },
+                    "targetRevenue": 2094455.0
+                  }
+                ],
+                "originPeriod": "2026-05",
+                "horizon": 1
+              },
+              {
+                "period": "2026-07",
+                "trainingRowCount": 8,
+                "featureNames": [
+                  "time_index",
+                  "month_sin",
+                  "month_cos",
+                  "lag_1",
+                  "lag_2",
+                  "lag_3",
+                  "mean_lag_3"
+                ],
+                "fitCount": 1,
+                "fallbackUsed": false,
+                "library": "xgboost",
+                "libraryVersion": "3.4.1",
+                "baseScore": "[9.2138925E5]",
+                "modelDiagnosticsAvailable": true,
+                "treeCount": 30,
+                "leafNodeCount": 60,
+                "splitNodeCount": 30,
+                "treeStructure": [
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3855.0354
+                      },
+                      {
+                        "leafValue": -4448.11768
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3816.48511
+                      },
+                      {
+                        "leafValue": -4417.32324
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3778.32007
+                      },
+                      {
+                        "leafValue": -4386.7417
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3740.53662
+                      },
+                      {
+                        "leafValue": -4356.37207
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3703.13086
+                      },
+                      {
+                        "leafValue": -4326.2124
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3666.1001
+                      },
+                      {
+                        "leafValue": -4296.26172
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3629.43848
+                      },
+                      {
+                        "leafValue": -4266.51855
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3593.14429
+                      },
+                      {
+                        "leafValue": -4236.98145
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3557.21289
+                      },
+                      {
+                        "leafValue": -4207.64795
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3521.64087
+                      },
+                      {
+                        "leafValue": -4178.51855
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3486.42505
+                      },
+                      {
+                        "leafValue": -4149.59033
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3451.5603
+                      },
+                      {
+                        "leafValue": -4120.86279
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3417.04517
+                      },
+                      {
+                        "leafValue": -4092.33374
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3382.87427
+                      },
+                      {
+                        "leafValue": -4064.00195
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3349.04541
+                      },
+                      {
+                        "leafValue": -4035.8667
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3315.55518
+                      },
+                      {
+                        "leafValue": -4007.92578
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3282.39917
+                      },
+                      {
+                        "leafValue": -3980.17871
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3249.57544
+                      },
+                      {
+                        "leafValue": -3952.62378
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3217.08008
+                      },
+                      {
+                        "leafValue": -3925.25952
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3184.90918
+                      },
+                      {
+                        "leafValue": -3898.08472
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3153.06006
+                      },
+                      {
+                        "leafValue": -3871.0979
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3121.5293
+                      },
+                      {
+                        "leafValue": -3844.29785
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3090.31421
+                      },
+                      {
+                        "leafValue": -3817.68335
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3059.41064
+                      },
+                      {
+                        "leafValue": -3791.25317
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3028.81665
+                      },
+                      {
+                        "leafValue": -3765.0061
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2998.52832
+                      },
+                      {
+                        "leafValue": -3738.94067
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2968.54321
+                      },
+                      {
+                        "leafValue": -3713.05591
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2938.85791
+                      },
+                      {
+                        "leafValue": -3687.3501
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2909.46899
+                      },
+                      {
+                        "leafValue": -3661.82202
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2880.37427
+                      },
+                      {
+                        "leafValue": -3636.47095
+                      }
+                    ]
+                  }
+                ],
+                "trainingRows": [
+                  {
+                    "targetPeriod": "2024-05",
+                    "inputPeriods": [
+                      "2024-02",
+                      "2024-03",
+                      "2024-04"
+                    ],
+                    "features": {
+                      "time_index": 3.0,
+                      "month_sin": 0.8660254037844387,
+                      "month_cos": -0.4999999999999998,
+                      "lag_1": 410000.0,
+                      "lag_2": 58000.0,
+                      "lag_3": 84000.0,
+                      "mean_lag_3": 184000.0
+                    },
+                    "targetRevenue": 253100.0
+                  },
+                  {
+                    "targetPeriod": "2024-06",
+                    "inputPeriods": [
+                      "2024-03",
+                      "2024-04",
+                      "2024-05"
+                    ],
+                    "features": {
+                      "time_index": 4.0,
+                      "month_sin": 0.49999999999999994,
+                      "month_cos": -0.8660254037844387,
+                      "lag_1": 253100.0,
+                      "lag_2": 410000.0,
+                      "lag_3": 58000.0,
+                      "mean_lag_3": 240366.66666666666
+                    },
+                    "targetRevenue": 1058700.0
+                  },
+                  {
+                    "targetPeriod": "2024-07",
+                    "inputPeriods": [
+                      "2024-04",
+                      "2024-05",
+                      "2024-06"
+                    ],
+                    "features": {
+                      "time_index": 5.0,
+                      "month_sin": 1.2246467991473532e-16,
+                      "month_cos": -1.0,
+                      "lag_1": 1058700.0,
+                      "lag_2": 253100.0,
+                      "lag_3": 410000.0,
+                      "mean_lag_3": 573933.3333333334
+                    },
+                    "targetRevenue": 83100.0
+                  },
+                  {
+                    "targetPeriod": "2025-10",
+                    "inputPeriods": [
+                      "2025-07",
+                      "2025-08",
+                      "2025-09"
+                    ],
+                    "features": {
+                      "time_index": 20.0,
+                      "month_sin": -1.0,
+                      "month_cos": -1.8369701987210297e-16,
+                      "lag_1": 490753.0,
+                      "lag_2": 1647619.0,
+                      "lag_3": 432891.0,
+                      "mean_lag_3": 857087.6666666666
+                    },
+                    "targetRevenue": 2419454.0
+                  },
+                  {
+                    "targetPeriod": "2025-11",
+                    "inputPeriods": [
+                      "2025-08",
+                      "2025-09",
+                      "2025-10"
+                    ],
+                    "features": {
+                      "time_index": 21.0,
+                      "month_sin": -0.8660254037844386,
+                      "month_cos": 0.5000000000000001,
+                      "lag_1": 2419454.0,
+                      "lag_2": 490753.0,
+                      "lag_3": 1647619.0,
+                      "mean_lag_3": 1519275.3333333333
+                    },
+                    "targetRevenue": 73550.0
+                  },
+                  {
+                    "targetPeriod": "2026-04",
+                    "inputPeriods": [
+                      "2026-01",
+                      "2026-02",
+                      "2026-03"
+                    ],
+                    "features": {
+                      "time_index": 26.0,
+                      "month_sin": 1.0,
+                      "month_cos": 6.123233995736766e-17,
+                      "lag_1": 144552.5,
+                      "lag_2": 118160.0,
+                      "lag_3": 685355.0,
+                      "mean_lag_3": 316022.5
+                    },
+                    "targetRevenue": 708755.0
+                  },
+                  {
+                    "targetPeriod": "2026-05",
+                    "inputPeriods": [
+                      "2026-02",
+                      "2026-03",
+                      "2026-04"
+                    ],
+                    "features": {
+                      "time_index": 27.0,
+                      "month_sin": 0.8660254037844387,
+                      "month_cos": -0.4999999999999998,
+                      "lag_1": 708755.0,
+                      "lag_2": 144552.5,
+                      "lag_3": 118160.0,
+                      "mean_lag_3": 323822.5
+                    },
+                    "targetRevenue": 2094455.0
+                  },
+                  {
+                    "targetPeriod": "2026-06",
+                    "inputPeriods": [
+                      "2026-03",
+                      "2026-04",
+                      "2026-05"
+                    ],
+                    "features": {
+                      "time_index": 28.0,
+                      "month_sin": 0.49999999999999994,
+                      "month_cos": -0.8660254037844387,
+                      "lag_1": 2094455.0,
+                      "lag_2": 708755.0,
+                      "lag_3": 144552.5,
+                      "mean_lag_3": 982587.5
+                    },
+                    "targetRevenue": 680000.0
+                  }
+                ],
+                "originPeriod": "2026-06",
+                "horizon": 1
+              },
+              {
+                "period": "2026-08",
+                "trainingRowCount": 9,
+                "featureNames": [
+                  "time_index",
+                  "month_sin",
+                  "month_cos",
+                  "lag_1",
+                  "lag_2",
+                  "lag_3",
+                  "mean_lag_3"
+                ],
+                "fitCount": 1,
+                "fallbackUsed": false,
+                "library": "xgboost",
+                "libraryVersion": "3.4.1",
+                "baseScore": "[9.240821E5]",
+                "modelDiagnosticsAvailable": true,
+                "treeCount": 30,
+                "leafNodeCount": 60,
+                "splitNodeCount": 30,
+                "treeStructure": [
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3629.24292
+                      },
+                      {
+                        "leafValue": -4466.76074
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3588.41382
+                      },
+                      {
+                        "leafValue": -4435.83691
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3548.04419
+                      },
+                      {
+                        "leafValue": -4405.12793
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3508.12817
+                      },
+                      {
+                        "leafValue": -4374.63086
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3468.66187
+                      },
+                      {
+                        "leafValue": -4344.34473
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3429.63892
+                      },
+                      {
+                        "leafValue": -4314.26855
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3391.05591
+                      },
+                      {
+                        "leafValue": -4284.40039
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3352.90625
+                      },
+                      {
+                        "leafValue": -4254.73975
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3315.18652
+                      },
+                      {
+                        "leafValue": -4225.2832
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3277.89038
+                      },
+                      {
+                        "leafValue": -4196.03125
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3241.01489
+                      },
+                      {
+                        "leafValue": -4166.98193
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3204.55347
+                      },
+                      {
+                        "leafValue": -4138.1333
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3168.50195
+                      },
+                      {
+                        "leafValue": -4109.48535
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3132.85645
+                      },
+                      {
+                        "leafValue": -4081.03442
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3097.61157
+                      },
+                      {
+                        "leafValue": -4052.78101
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3062.76318
+                      },
+                      {
+                        "leafValue": -4024.72339
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 3028.30737
+                      },
+                      {
+                        "leafValue": -3996.86011
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2994.23853
+                      },
+                      {
+                        "leafValue": -3969.18921
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2960.55322
+                      },
+                      {
+                        "leafValue": -3941.71021
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2927.24707
+                      },
+                      {
+                        "leafValue": -3914.42163
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2894.31567
+                      },
+                      {
+                        "leafValue": -3887.32153
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2861.75488
+                      },
+                      {
+                        "leafValue": -3860.40942
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2829.56006
+                      },
+                      {
+                        "leafValue": -3833.68359
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2797.72729
+                      },
+                      {
+                        "leafValue": -3807.14258
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2766.25269
+                      },
+                      {
+                        "leafValue": -3780.78564
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2735.13232
+                      },
+                      {
+                        "leafValue": -3754.61084
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2704.36206
+                      },
+                      {
+                        "leafValue": -3728.61719
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2673.93799
+                      },
+                      {
+                        "leafValue": -3702.80371
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 3839.40527
+                      },
+                      {
+                        "leafValue": -2651.94189
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "lag_1",
+                    "splitCondition": 1058700.0,
+                    "children": [
+                      {
+                        "leafValue": 2661.51904
+                      },
+                      {
+                        "leafValue": -3658.80908
+                      }
+                    ]
+                  }
+                ],
+                "trainingRows": [
+                  {
+                    "targetPeriod": "2024-05",
+                    "inputPeriods": [
+                      "2024-02",
+                      "2024-03",
+                      "2024-04"
+                    ],
+                    "features": {
+                      "time_index": 3.0,
+                      "month_sin": 0.8660254037844387,
+                      "month_cos": -0.4999999999999998,
+                      "lag_1": 410000.0,
+                      "lag_2": 58000.0,
+                      "lag_3": 84000.0,
+                      "mean_lag_3": 184000.0
+                    },
+                    "targetRevenue": 253100.0
+                  },
+                  {
+                    "targetPeriod": "2024-06",
+                    "inputPeriods": [
+                      "2024-03",
+                      "2024-04",
+                      "2024-05"
+                    ],
+                    "features": {
+                      "time_index": 4.0,
+                      "month_sin": 0.49999999999999994,
+                      "month_cos": -0.8660254037844387,
+                      "lag_1": 253100.0,
+                      "lag_2": 410000.0,
+                      "lag_3": 58000.0,
+                      "mean_lag_3": 240366.66666666666
+                    },
+                    "targetRevenue": 1058700.0
+                  },
+                  {
+                    "targetPeriod": "2024-07",
+                    "inputPeriods": [
+                      "2024-04",
+                      "2024-05",
+                      "2024-06"
+                    ],
+                    "features": {
+                      "time_index": 5.0,
+                      "month_sin": 1.2246467991473532e-16,
+                      "month_cos": -1.0,
+                      "lag_1": 1058700.0,
+                      "lag_2": 253100.0,
+                      "lag_3": 410000.0,
+                      "mean_lag_3": 573933.3333333334
+                    },
+                    "targetRevenue": 83100.0
+                  },
+                  {
+                    "targetPeriod": "2025-10",
+                    "inputPeriods": [
+                      "2025-07",
+                      "2025-08",
+                      "2025-09"
+                    ],
+                    "features": {
+                      "time_index": 20.0,
+                      "month_sin": -1.0,
+                      "month_cos": -1.8369701987210297e-16,
+                      "lag_1": 490753.0,
+                      "lag_2": 1647619.0,
+                      "lag_3": 432891.0,
+                      "mean_lag_3": 857087.6666666666
+                    },
+                    "targetRevenue": 2419454.0
+                  },
+                  {
+                    "targetPeriod": "2025-11",
+                    "inputPeriods": [
+                      "2025-08",
+                      "2025-09",
+                      "2025-10"
+                    ],
+                    "features": {
+                      "time_index": 21.0,
+                      "month_sin": -0.8660254037844386,
+                      "month_cos": 0.5000000000000001,
+                      "lag_1": 2419454.0,
+                      "lag_2": 490753.0,
+                      "lag_3": 1647619.0,
+                      "mean_lag_3": 1519275.3333333333
+                    },
+                    "targetRevenue": 73550.0
+                  },
+                  {
+                    "targetPeriod": "2026-04",
+                    "inputPeriods": [
+                      "2026-01",
+                      "2026-02",
+                      "2026-03"
+                    ],
+                    "features": {
+                      "time_index": 26.0,
+                      "month_sin": 1.0,
+                      "month_cos": 6.123233995736766e-17,
+                      "lag_1": 144552.5,
+                      "lag_2": 118160.0,
+                      "lag_3": 685355.0,
+                      "mean_lag_3": 316022.5
+                    },
+                    "targetRevenue": 708755.0
+                  },
+                  {
+                    "targetPeriod": "2026-05",
+                    "inputPeriods": [
+                      "2026-02",
+                      "2026-03",
+                      "2026-04"
+                    ],
+                    "features": {
+                      "time_index": 27.0,
+                      "month_sin": 0.8660254037844387,
+                      "month_cos": -0.4999999999999998,
+                      "lag_1": 708755.0,
+                      "lag_2": 144552.5,
+                      "lag_3": 118160.0,
+                      "mean_lag_3": 323822.5
+                    },
+                    "targetRevenue": 2094455.0
+                  },
+                  {
+                    "targetPeriod": "2026-06",
+                    "inputPeriods": [
+                      "2026-03",
+                      "2026-04",
+                      "2026-05"
+                    ],
+                    "features": {
+                      "time_index": 28.0,
+                      "month_sin": 0.49999999999999994,
+                      "month_cos": -0.8660254037844387,
+                      "lag_1": 2094455.0,
+                      "lag_2": 708755.0,
+                      "lag_3": 144552.5,
+                      "mean_lag_3": 982587.5
+                    },
+                    "targetRevenue": 680000.0
+                  },
+                  {
+                    "targetPeriod": "2026-07",
+                    "inputPeriods": [
+                      "2026-04",
+                      "2026-05",
+                      "2026-06"
+                    ],
+                    "features": {
+                      "time_index": 29.0,
+                      "month_sin": 1.2246467991473532e-16,
+                      "month_cos": -1.0,
+                      "lag_1": 680000.0,
+                      "lag_2": 2094455.0,
+                      "lag_3": 708755.0,
+                      "mean_lag_3": 1161070.0
+                    },
+                    "targetRevenue": 945625.0
+                  }
+                ],
+                "originPeriod": "2026-07",
+                "horizon": 1
+              }
+            ],
+            "fallbackUsed": false
+          }
+        },
+        "random_forest": {
+          "metrics": {
+            "mae": 740349.58,
+            "mape": 581.25,
+            "rmse": 826050.06,
+            "testObservations": 7,
+            "mapeSamples": 7,
+            "zeroActualObservations": 0
+          },
+          "predictions": [
+            {
+              "originPeriod": "2024-05",
+              "horizon": 1,
+              "period": "2024-06",
+              "actualRevenue": 1058700.0,
+              "predictedRevenue": 253100.0,
+              "absoluteError": 805600.0,
+              "absolutePercentageError": 76.093322
+            },
+            {
+              "originPeriod": "2024-06",
+              "horizon": 1,
+              "period": "2024-07",
+              "actualRevenue": 83100.0,
+              "predictedRevenue": 603536.0,
+              "absoluteError": 520436.0,
+              "absolutePercentageError": 626.276775
+            },
+            {
+              "originPeriod": "2025-10",
+              "horizon": 1,
+              "period": "2025-11",
+              "actualRevenue": 73550.0,
+              "predictedRevenue": 1163469.44,
+              "absoluteError": 1089919.44,
+              "absolutePercentageError": 1481.875513
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 1,
+              "period": "2026-05",
+              "actualRevenue": 2094455.0,
+              "predictedRevenue": 695068.99,
+              "absoluteError": 1399386.01,
+              "absolutePercentageError": 66.813849
+            },
+            {
+              "originPeriod": "2026-05",
+              "horizon": 1,
+              "period": "2026-06",
+              "actualRevenue": 680000.0,
+              "predictedRevenue": 1177360.4,
+              "absoluteError": 497360.4,
+              "absolutePercentageError": 73.141235
+            },
+            {
+              "originPeriod": "2026-06",
+              "horizon": 1,
+              "period": "2026-07",
+              "actualRevenue": 945625.0,
+              "predictedRevenue": 1174506.54,
+              "absoluteError": 228881.54,
+              "absolutePercentageError": 24.204261
+            },
+            {
+              "originPeriod": "2026-07",
+              "horizon": 1,
+              "period": "2026-08",
+              "actualRevenue": 37252.0,
+              "predictedRevenue": 678115.68,
+              "absoluteError": 640863.68,
+              "absolutePercentageError": 1720.347042
+            }
+          ],
+          "execution": {
+            "strategy": "expanding_one_step_refit",
+            "evaluationFolds": 7,
+            "trainingRowsByFoldAndStep": [
+              [
+                1
+              ],
+              [
+                2
+              ],
+              [
+                4
+              ],
+              [
+                6
+              ],
+              [
+                7
+              ],
+              [
+                8
+              ],
+              [
+                9
+              ]
+            ],
+            "fitCount": 7,
+            "foldDetails": [],
+            "fallbackUsed": false
+          }
+        },
+        "linear_regression": {
+          "metrics": {
+            "mae": 1803817.44,
+            "mape": 381.42,
+            "rmse": 3091897.07,
+            "testObservations": 7,
+            "mapeSamples": 7,
+            "zeroActualObservations": 0
+          },
+          "predictions": [
+            {
+              "originPeriod": "2024-05",
+              "horizon": 1,
+              "period": "2024-06",
+              "actualRevenue": 1058700.0,
+              "predictedRevenue": 210523.94,
+              "absoluteError": 848176.06,
+              "absolutePercentageError": 80.114864
+            },
+            {
+              "originPeriod": "2024-06",
+              "horizon": 1,
+              "period": "2024-07",
+              "actualRevenue": 83100.0,
+              "predictedRevenue": 955032.04,
+              "absoluteError": 871932.04,
+              "absolutePercentageError": 1049.256366
+            },
+            {
+              "originPeriod": "2025-10",
+              "horizon": 1,
+              "period": "2025-11",
+              "actualRevenue": 73550.0,
+              "predictedRevenue": 0.0,
+              "absoluteError": 73550.0,
+              "absolutePercentageError": 100.0
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 1,
+              "period": "2026-05",
+              "actualRevenue": 2094455.0,
+              "predictedRevenue": 0.0,
+              "absoluteError": 2094455.0,
+              "absolutePercentageError": 100.0
+            },
+            {
+              "originPeriod": "2026-05",
+              "horizon": 1,
+              "period": "2026-06",
+              "actualRevenue": 680000.0,
+              "predictedRevenue": 8435731.99,
+              "absoluteError": 7755731.99,
+              "absolutePercentageError": 1140.548822
+            },
+            {
+              "originPeriod": "2026-06",
+              "horizon": 1,
+              "period": "2026-07",
+              "actualRevenue": 945625.0,
+              "predictedRevenue": 0.0,
+              "absoluteError": 945625.0,
+              "absolutePercentageError": 100.0
+            },
+            {
+              "originPeriod": "2026-07",
+              "horizon": 1,
+              "period": "2026-08",
+              "actualRevenue": 37252.0,
+              "predictedRevenue": 0.0,
+              "absoluteError": 37252.0,
+              "absolutePercentageError": 100.0
+            }
+          ],
+          "execution": {
+            "strategy": "expanding_one_step_refit",
+            "evaluationFolds": 7,
+            "trainingRowsByFoldAndStep": [
+              [
+                1
+              ],
+              [
+                2
+              ],
+              [
+                4
+              ],
+              [
+                6
+              ],
+              [
+                7
+              ],
+              [
+                8
+              ],
+              [
+                9
+              ]
+            ],
+            "fitCount": 7,
+            "foldDetails": [],
+            "fallbackUsed": false
+          }
+        },
+        "naive": {
+          "metrics": {
+            "mae": 1157322.43,
+            "mape": 1025.76,
+            "rmse": 1304968.41,
+            "testObservations": 7,
+            "mapeSamples": 7,
+            "zeroActualObservations": 0
+          },
+          "predictions": [
+            {
+              "originPeriod": "2024-05",
+              "horizon": 1,
+              "period": "2024-06",
+              "actualRevenue": 1058700.0,
+              "predictedRevenue": 253100.0,
+              "absoluteError": 805600.0,
+              "absolutePercentageError": 76.093322
+            },
+            {
+              "originPeriod": "2024-06",
+              "horizon": 1,
+              "period": "2024-07",
+              "actualRevenue": 83100.0,
+              "predictedRevenue": 1058700.0,
+              "absoluteError": 975600.0,
+              "absolutePercentageError": 1174.00722
+            },
+            {
+              "originPeriod": "2025-10",
+              "horizon": 1,
+              "period": "2025-11",
+              "actualRevenue": 73550.0,
+              "predictedRevenue": 2419454.0,
+              "absoluteError": 2345904.0,
+              "absolutePercentageError": 3189.53637
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 1,
+              "period": "2026-05",
+              "actualRevenue": 2094455.0,
+              "predictedRevenue": 708755.0,
+              "absoluteError": 1385700.0,
+              "absolutePercentageError": 66.160409
+            },
+            {
+              "originPeriod": "2026-05",
+              "horizon": 1,
+              "period": "2026-06",
+              "actualRevenue": 680000.0,
+              "predictedRevenue": 2094455.0,
+              "absoluteError": 1414455.0,
+              "absolutePercentageError": 208.008088
+            },
+            {
+              "originPeriod": "2026-06",
+              "horizon": 1,
+              "period": "2026-07",
+              "actualRevenue": 945625.0,
+              "predictedRevenue": 680000.0,
+              "absoluteError": 265625.0,
+              "absolutePercentageError": 28.089888
+            },
+            {
+              "originPeriod": "2026-07",
+              "horizon": 1,
+              "period": "2026-08",
+              "actualRevenue": 37252.0,
+              "predictedRevenue": 945625.0,
+              "absoluteError": 908373.0,
+              "absolutePercentageError": 2438.454311
+            }
+          ],
+          "execution": {
+            "strategy": "expanding_actual_baseline",
+            "evaluationFolds": 7,
+            "trainingRowsByFoldAndStep": [
+              [
+                1
+              ],
+              [
+                2
+              ],
+              [
+                4
+              ],
+              [
+                6
+              ],
+              [
+                7
+              ],
+              [
+                8
+              ],
+              [
+                9
+              ]
+            ],
+            "fitCount": 0,
+            "foldDetails": [],
+            "fallbackUsed": false
+          }
+        },
+        "moving_average_3": {
+          "metrics": {
+            "mae": 892333.09,
+            "mape": 859.17,
+            "rmse": 1050203.42,
+            "testObservations": 7,
+            "mapeSamples": 7,
+            "zeroActualObservations": 0
+          },
+          "predictions": [
+            {
+              "originPeriod": "2024-05",
+              "horizon": 1,
+              "period": "2024-06",
+              "actualRevenue": 1058700.0,
+              "predictedRevenue": 240366.67,
+              "absoluteError": 818333.33,
+              "absolutePercentageError": 77.296055
+            },
+            {
+              "originPeriod": "2024-06",
+              "horizon": 1,
+              "period": "2024-07",
+              "actualRevenue": 83100.0,
+              "predictedRevenue": 573933.33,
+              "absoluteError": 490833.33,
+              "absolutePercentageError": 590.653827
+            },
+            {
+              "originPeriod": "2025-10",
+              "horizon": 1,
+              "period": "2025-11",
+              "actualRevenue": 73550.0,
+              "predictedRevenue": 1519275.33,
+              "absoluteError": 1445725.33,
+              "absolutePercentageError": 1965.636071
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 1,
+              "period": "2026-05",
+              "actualRevenue": 2094455.0,
+              "predictedRevenue": 323822.5,
+              "absoluteError": 1770632.5,
+              "absolutePercentageError": 84.539057
+            },
+            {
+              "originPeriod": "2026-05",
+              "horizon": 1,
+              "period": "2026-06",
+              "actualRevenue": 680000.0,
+              "predictedRevenue": 982587.5,
+              "absoluteError": 302587.5,
+              "absolutePercentageError": 44.498162
+            },
+            {
+              "originPeriod": "2026-06",
+              "horizon": 1,
+              "period": "2026-07",
+              "actualRevenue": 945625.0,
+              "predictedRevenue": 1161070.0,
+              "absoluteError": 215445.0,
+              "absolutePercentageError": 22.783344
+            },
+            {
+              "originPeriod": "2026-07",
+              "horizon": 1,
+              "period": "2026-08",
+              "actualRevenue": 37252.0,
+              "predictedRevenue": 1240026.67,
+              "absoluteError": 1202774.67,
+              "absolutePercentageError": 3228.751933
+            }
+          ],
+          "execution": {
+            "strategy": "expanding_actual_baseline",
+            "evaluationFolds": 7,
+            "trainingRowsByFoldAndStep": [
+              [
+                1
+              ],
+              [
+                2
+              ],
+              [
+                4
+              ],
+              [
+                6
+              ],
+              [
+                7
+              ],
+              [
+                8
+              ],
+              [
+                9
+              ]
+            ],
+            "fitCount": 0,
+            "foldDetails": [],
+            "fallbackUsed": false
+          }
+        }
+      }
+    },
+    "oneStepMayToJuly": {
+      "xgboost": {
+        "predictions": [
+          {
+            "originPeriod": "2026-04",
+            "horizon": 1,
+            "period": "2026-05",
+            "actualRevenue": 2094455.0,
+            "predictedRevenue": 680036.75,
+            "absoluteError": 1414418.25,
+            "absolutePercentageError": 67.531565
+          },
+          {
+            "originPeriod": "2026-05",
+            "horizon": 1,
+            "period": "2026-06",
+            "actualRevenue": 680000.0,
+            "predictedRevenue": 836113.81,
+            "absoluteError": 156113.81,
+            "absolutePercentageError": 22.957913
+          },
+          {
+            "originPeriod": "2026-06",
+            "horizon": 1,
+            "period": "2026-07",
+            "actualRevenue": 945625.0,
+            "predictedRevenue": 1021735.75,
+            "absoluteError": 76110.75,
+            "absolutePercentageError": 8.048724
+          }
+        ],
+        "metrics": {
+          "mae": 548880.94,
+          "mape": 32.85,
+          "rmse": 822748.11,
+          "testObservations": 3,
+          "mapeSamples": 3,
+          "zeroActualObservations": 0
+        }
+      },
+      "random_forest": {
+        "predictions": [
+          {
+            "originPeriod": "2026-04",
+            "horizon": 1,
+            "period": "2026-05",
+            "actualRevenue": 2094455.0,
+            "predictedRevenue": 695068.99,
+            "absoluteError": 1399386.01,
+            "absolutePercentageError": 66.813849
+          },
+          {
+            "originPeriod": "2026-05",
+            "horizon": 1,
+            "period": "2026-06",
+            "actualRevenue": 680000.0,
+            "predictedRevenue": 1177360.4,
+            "absoluteError": 497360.4,
+            "absolutePercentageError": 73.141235
+          },
+          {
+            "originPeriod": "2026-06",
+            "horizon": 1,
+            "period": "2026-07",
+            "actualRevenue": 945625.0,
+            "predictedRevenue": 1174506.54,
+            "absoluteError": 228881.54,
+            "absolutePercentageError": 24.204261
+          }
+        ],
+        "metrics": {
+          "mae": 708542.65,
+          "mape": 54.72,
+          "rmse": 867570.43,
+          "testObservations": 3,
+          "mapeSamples": 3,
+          "zeroActualObservations": 0
+        }
+      },
+      "linear_regression": {
+        "predictions": [
+          {
+            "originPeriod": "2026-04",
+            "horizon": 1,
+            "period": "2026-05",
+            "actualRevenue": 2094455.0,
+            "predictedRevenue": 0.0,
+            "absoluteError": 2094455.0,
+            "absolutePercentageError": 100.0
+          },
+          {
+            "originPeriod": "2026-05",
+            "horizon": 1,
+            "period": "2026-06",
+            "actualRevenue": 680000.0,
+            "predictedRevenue": 8435731.99,
+            "absoluteError": 7755731.99,
+            "absolutePercentageError": 1140.548822
+          },
+          {
+            "originPeriod": "2026-06",
+            "horizon": 1,
+            "period": "2026-07",
+            "actualRevenue": 945625.0,
+            "predictedRevenue": 0.0,
+            "absoluteError": 945625.0,
+            "absolutePercentageError": 100.0
+          }
+        ],
+        "metrics": {
+          "mae": 3598604.0,
+          "mape": 446.85,
+          "rmse": 4670200.82,
+          "testObservations": 3,
+          "mapeSamples": 3,
+          "zeroActualObservations": 0
+        }
+      },
+      "naive": {
+        "predictions": [
+          {
+            "originPeriod": "2026-04",
+            "horizon": 1,
+            "period": "2026-05",
+            "actualRevenue": 2094455.0,
+            "predictedRevenue": 708755.0,
+            "absoluteError": 1385700.0,
+            "absolutePercentageError": 66.160409
+          },
+          {
+            "originPeriod": "2026-05",
+            "horizon": 1,
+            "period": "2026-06",
+            "actualRevenue": 680000.0,
+            "predictedRevenue": 2094455.0,
+            "absoluteError": 1414455.0,
+            "absolutePercentageError": 208.008088
+          },
+          {
+            "originPeriod": "2026-06",
+            "horizon": 1,
+            "period": "2026-07",
+            "actualRevenue": 945625.0,
+            "predictedRevenue": 680000.0,
+            "absoluteError": 265625.0,
+            "absolutePercentageError": 28.089888
+          }
+        ],
+        "metrics": {
+          "mae": 1021926.67,
+          "mape": 100.75,
+          "rmse": 1153459.16,
+          "testObservations": 3,
+          "mapeSamples": 3,
+          "zeroActualObservations": 0
+        }
+      },
+      "moving_average_3": {
+        "predictions": [
+          {
+            "originPeriod": "2026-04",
+            "horizon": 1,
+            "period": "2026-05",
+            "actualRevenue": 2094455.0,
+            "predictedRevenue": 323822.5,
+            "absoluteError": 1770632.5,
+            "absolutePercentageError": 84.539057
+          },
+          {
+            "originPeriod": "2026-05",
+            "horizon": 1,
+            "period": "2026-06",
+            "actualRevenue": 680000.0,
+            "predictedRevenue": 982587.5,
+            "absoluteError": 302587.5,
+            "absolutePercentageError": 44.498162
+          },
+          {
+            "originPeriod": "2026-06",
+            "horizon": 1,
+            "period": "2026-07",
+            "actualRevenue": 945625.0,
+            "predictedRevenue": 1161070.0,
+            "absoluteError": 215445.0,
+            "absolutePercentageError": 22.783344
+          }
+        ],
+        "metrics": {
+          "mae": 762888.33,
+          "mape": 50.61,
+          "rmse": 1044527.83,
+          "testObservations": 3,
+          "mapeSamples": 3,
+          "zeroActualObservations": 0
+        }
+      }
+    },
+    "fixedOrigin": {
+      "strategy": "fixed_origin_recursive_horizon",
+      "periodStart": "2026-05",
+      "periodEnd": "2026-07",
+      "models": {
+        "xgboost": {
+          "metrics": {
+            "mae": 560014.42,
+            "mape": 31.87,
+            "rmse": 830886.3,
+            "testObservations": 3,
+            "mapeSamples": 3,
+            "zeroActualObservations": 0
+          },
+          "predictions": [
+            {
+              "originPeriod": "2026-04",
+              "horizon": 1,
+              "period": "2026-05",
+              "actualRevenue": 2094455.0,
+              "predictedRevenue": 680036.75,
+              "absoluteError": 1414418.25,
+              "absolutePercentageError": 67.531565
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 2,
+              "period": "2026-06",
+              "actualRevenue": 680000.0,
+              "predictedRevenue": 680036.75,
+              "absoluteError": 36.75,
+              "absolutePercentageError": 0.005404
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 3,
+              "period": "2026-07",
+              "actualRevenue": 945625.0,
+              "predictedRevenue": 680036.75,
+              "absoluteError": 265588.25,
+              "absolutePercentageError": 28.086001
+            }
+          ],
+          "execution": {
+            "strategy": "fixed_origin_single_fit_recursive",
+            "evaluationFolds": 1,
+            "trainingRowsByFoldAndStep": [
+              [
+                6,
+                6,
+                6
+              ]
+            ],
+            "fitCountPerFold": 1,
+            "foldDetails": [
+              {
+                "period": "2026-05",
+                "trainingRowCount": 6,
+                "featureNames": [
+                  "time_index",
+                  "month_sin",
+                  "month_cos",
+                  "lag_1",
+                  "lag_2",
+                  "lag_3",
+                  "mean_lag_3"
+                ],
+                "fitCount": 1,
+                "fallbackUsed": false,
+                "library": "xgboost",
+                "libraryVersion": "3.4.1",
+                "baseScore": "[7.661098E5]",
+                "modelDiagnosticsAvailable": true,
+                "treeCount": 30,
+                "leafNodeCount": 60,
+                "splitNodeCount": 30,
+                "treeStructure": [
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4509.12061
+                      },
+                      {
+                        "leafValue": -3306.68799
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4496.82275
+                      },
+                      {
+                        "leafValue": -3273.62134
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4484.55859
+                      },
+                      {
+                        "leafValue": -3240.88501
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4472.32812
+                      },
+                      {
+                        "leafValue": -3208.47632
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4460.13086
+                      },
+                      {
+                        "leafValue": -3176.39136
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4447.9668
+                      },
+                      {
+                        "leafValue": -3144.62744
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4435.83594
+                      },
+                      {
+                        "leafValue": -3113.18115
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4423.73828
+                      },
+                      {
+                        "leafValue": -3082.04932
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4411.67383
+                      },
+                      {
+                        "leafValue": -3051.22876
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4399.64209
+                      },
+                      {
+                        "leafValue": -3020.71606
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4387.64307
+                      },
+                      {
+                        "leafValue": -2990.50928
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4375.67676
+                      },
+                      {
+                        "leafValue": -2960.60425
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4363.74316
+                      },
+                      {
+                        "leafValue": -2930.99805
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4351.8418
+                      },
+                      {
+                        "leafValue": -2901.68799
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4339.97266
+                      },
+                      {
+                        "leafValue": -2872.67114
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4328.13672
+                      },
+                      {
+                        "leafValue": -2843.94434
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4316.33301
+                      },
+                      {
+                        "leafValue": -2815.50488
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4304.56104
+                      },
+                      {
+                        "leafValue": -2787.34985
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4292.82129
+                      },
+                      {
+                        "leafValue": -2759.47607
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4281.11377
+                      },
+                      {
+                        "leafValue": -2731.88135
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4269.43799
+                      },
+                      {
+                        "leafValue": -2704.5625
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4257.79443
+                      },
+                      {
+                        "leafValue": -2677.51685
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4246.18164
+                      },
+                      {
+                        "leafValue": -2650.7417
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4234.60156
+                      },
+                      {
+                        "leafValue": -2624.23413
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4223.05225
+                      },
+                      {
+                        "leafValue": -2597.9917
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4211.53467
+                      },
+                      {
+                        "leafValue": -2572.01172
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4200.04932
+                      },
+                      {
+                        "leafValue": -2546.29199
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4188.59424
+                      },
+                      {
+                        "leafValue": -2520.82861
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4177.17041
+                      },
+                      {
+                        "leafValue": -2495.62061
+                      }
+                    ]
+                  },
+                  {
+                    "splitFeature": "month_sin",
+                    "splitCondition": -0.866025388,
+                    "children": [
+                      {
+                        "leafValue": 4165.77783
+                      },
+                      {
+                        "leafValue": -2470.66431
+                      }
+                    ]
+                  }
+                ],
+                "trainingRows": [
+                  {
+                    "targetPeriod": "2024-05",
+                    "inputPeriods": [
+                      "2024-02",
+                      "2024-03",
+                      "2024-04"
+                    ],
+                    "features": {
+                      "time_index": 3.0,
+                      "month_sin": 0.8660254037844387,
+                      "month_cos": -0.4999999999999998,
+                      "lag_1": 410000.0,
+                      "lag_2": 58000.0,
+                      "lag_3": 84000.0,
+                      "mean_lag_3": 184000.0
+                    },
+                    "targetRevenue": 253100.0
+                  },
+                  {
+                    "targetPeriod": "2024-06",
+                    "inputPeriods": [
+                      "2024-03",
+                      "2024-04",
+                      "2024-05"
+                    ],
+                    "features": {
+                      "time_index": 4.0,
+                      "month_sin": 0.49999999999999994,
+                      "month_cos": -0.8660254037844387,
+                      "lag_1": 253100.0,
+                      "lag_2": 410000.0,
+                      "lag_3": 58000.0,
+                      "mean_lag_3": 240366.66666666666
+                    },
+                    "targetRevenue": 1058700.0
+                  },
+                  {
+                    "targetPeriod": "2024-07",
+                    "inputPeriods": [
+                      "2024-04",
+                      "2024-05",
+                      "2024-06"
+                    ],
+                    "features": {
+                      "time_index": 5.0,
+                      "month_sin": 1.2246467991473532e-16,
+                      "month_cos": -1.0,
+                      "lag_1": 1058700.0,
+                      "lag_2": 253100.0,
+                      "lag_3": 410000.0,
+                      "mean_lag_3": 573933.3333333334
+                    },
+                    "targetRevenue": 83100.0
+                  },
+                  {
+                    "targetPeriod": "2025-10",
+                    "inputPeriods": [
+                      "2025-07",
+                      "2025-08",
+                      "2025-09"
+                    ],
+                    "features": {
+                      "time_index": 20.0,
+                      "month_sin": -1.0,
+                      "month_cos": -1.8369701987210297e-16,
+                      "lag_1": 490753.0,
+                      "lag_2": 1647619.0,
+                      "lag_3": 432891.0,
+                      "mean_lag_3": 857087.6666666666
+                    },
+                    "targetRevenue": 2419454.0
+                  },
+                  {
+                    "targetPeriod": "2025-11",
+                    "inputPeriods": [
+                      "2025-08",
+                      "2025-09",
+                      "2025-10"
+                    ],
+                    "features": {
+                      "time_index": 21.0,
+                      "month_sin": -0.8660254037844386,
+                      "month_cos": 0.5000000000000001,
+                      "lag_1": 2419454.0,
+                      "lag_2": 490753.0,
+                      "lag_3": 1647619.0,
+                      "mean_lag_3": 1519275.3333333333
+                    },
+                    "targetRevenue": 73550.0
+                  },
+                  {
+                    "targetPeriod": "2026-04",
+                    "inputPeriods": [
+                      "2026-01",
+                      "2026-02",
+                      "2026-03"
+                    ],
+                    "features": {
+                      "time_index": 26.0,
+                      "month_sin": 1.0,
+                      "month_cos": 6.123233995736766e-17,
+                      "lag_1": 144552.5,
+                      "lag_2": 118160.0,
+                      "lag_3": 685355.0,
+                      "mean_lag_3": 316022.5
+                    },
+                    "targetRevenue": 708755.0
+                  }
+                ]
+              }
+            ],
+            "fallbackUsed": false
+          }
+        },
+        "random_forest": {
+          "metrics": {
+            "mae": 557995.75,
+            "mape": 33.19,
+            "rmse": 816600.76,
+            "testObservations": 3,
+            "mapeSamples": 3,
+            "zeroActualObservations": 0
+          },
+          "predictions": [
+            {
+              "originPeriod": "2026-04",
+              "horizon": 1,
+              "period": "2026-05",
+              "actualRevenue": 2094455.0,
+              "predictedRevenue": 695068.99,
+              "absoluteError": 1399386.01,
+              "absolutePercentageError": 66.813849
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 2,
+              "period": "2026-06",
+              "actualRevenue": 680000.0,
+              "predictedRevenue": 769728.19,
+              "absoluteError": 89728.19,
+              "absolutePercentageError": 13.195322
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 3,
+              "period": "2026-07",
+              "actualRevenue": 945625.0,
+              "predictedRevenue": 760751.94,
+              "absoluteError": 184873.06,
+              "absolutePercentageError": 19.550357
+            }
+          ],
+          "execution": {
+            "strategy": "fixed_origin_single_fit_recursive",
+            "evaluationFolds": 1,
+            "trainingRowsByFoldAndStep": [
+              [
+                6,
+                6,
+                6
+              ]
+            ],
+            "fitCountPerFold": 1,
+            "foldDetails": [],
+            "fallbackUsed": false
+          }
+        },
+        "linear_regression": {
+          "metrics": {
+            "mae": 1123385.59,
+            "mape": 82.85,
+            "rmse": 1340385.4,
+            "testObservations": 3,
+            "mapeSamples": 3,
+            "zeroActualObservations": 0
+          },
+          "predictions": [
+            {
+              "originPeriod": "2026-04",
+              "horizon": 1,
+              "period": "2026-05",
+              "actualRevenue": 2094455.0,
+              "predictedRevenue": 0.0,
+              "absoluteError": 2094455.0,
+              "absolutePercentageError": 100.0
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 2,
+              "period": "2026-06",
+              "actualRevenue": 680000.0,
+              "predictedRevenue": 349923.23,
+              "absoluteError": 330076.77,
+              "absolutePercentageError": 48.540701
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 3,
+              "period": "2026-07",
+              "actualRevenue": 945625.0,
+              "predictedRevenue": 0.0,
+              "absoluteError": 945625.0,
+              "absolutePercentageError": 100.0
+            }
+          ],
+          "execution": {
+            "strategy": "fixed_origin_single_fit_recursive",
+            "evaluationFolds": 1,
+            "trainingRowsByFoldAndStep": [
+              [
+                6,
+                6,
+                6
+              ]
+            ],
+            "fitCountPerFold": 1,
+            "foldDetails": [],
+            "fallbackUsed": false
+          }
+        },
+        "naive": {
+          "metrics": {
+            "mae": 550441.67,
+            "mape": 31.81,
+            "rmse": 811808.42,
+            "testObservations": 3,
+            "mapeSamples": 3,
+            "zeroActualObservations": 0
+          },
+          "predictions": [
+            {
+              "originPeriod": "2026-04",
+              "horizon": 1,
+              "period": "2026-05",
+              "actualRevenue": 2094455.0,
+              "predictedRevenue": 708755.0,
+              "absoluteError": 1385700.0,
+              "absolutePercentageError": 66.160409
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 2,
+              "period": "2026-06",
+              "actualRevenue": 680000.0,
+              "predictedRevenue": 708755.0,
+              "absoluteError": 28755.0,
+              "absolutePercentageError": 4.228676
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 3,
+              "period": "2026-07",
+              "actualRevenue": 945625.0,
+              "predictedRevenue": 708755.0,
+              "absoluteError": 236870.0,
+              "absolutePercentageError": 25.049042
+            }
+          ],
+          "execution": {
+            "strategy": "fixed_origin_recursive_baseline",
+            "evaluationFolds": 1,
+            "trainingRowsByFoldAndStep": [],
+            "fitCountPerFold": 0,
+            "foldDetails": [],
+            "fallbackUsed": false
+          }
+        },
+        "moving_average_3": {
+          "metrics": {
+            "mae": 842965.37,
+            "mape": 58.87,
+            "rmse": 1070727.0,
+            "testObservations": 3,
+            "mapeSamples": 3,
+            "zeroActualObservations": 0
+          },
+          "predictions": [
+            {
+              "originPeriod": "2026-04",
+              "horizon": 1,
+              "period": "2026-05",
+              "actualRevenue": 2094455.0,
+              "predictedRevenue": 323822.5,
+              "absoluteError": 1770632.5,
+              "absolutePercentageError": 84.539057
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 2,
+              "period": "2026-06",
+              "actualRevenue": 680000.0,
+              "predictedRevenue": 392376.67,
+              "absoluteError": 287623.33,
+              "absolutePercentageError": 42.297549
+            },
+            {
+              "originPeriod": "2026-04",
+              "horizon": 3,
+              "period": "2026-07",
+              "actualRevenue": 945625.0,
+              "predictedRevenue": 474984.72,
+              "absoluteError": 470640.28,
+              "absolutePercentageError": 49.770287
+            }
+          ],
+          "execution": {
+            "strategy": "fixed_origin_recursive_baseline",
+            "evaluationFolds": 1,
+            "trainingRowsByFoldAndStep": [],
+            "fitCountPerFold": 0,
+            "foldDetails": [],
+            "fallbackUsed": false
+          }
+        }
+      }
+    },
+    "horizonEvaluationCoverage": {
+      "1": {
+        "evaluationMethod": "fixed_origin_recursive_horizon",
+        "models": {
+          "xgboost": {
+            "metrics": {
+              "mae": 655268.11,
+              "mape": 678.58,
+              "rmse": 863170.96,
+              "testObservations": 4,
+              "mapeSamples": 4,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 4,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08"
+            ]
+          },
+          "random_forest": {
+            "metrics": {
+              "mae": 691622.91,
+              "mape": 471.13,
+              "rmse": 816814.18,
+              "testObservations": 4,
+              "mapeSamples": 4,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 4,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08"
+            ]
+          },
+          "linear_regression": {
+            "metrics": {
+              "mae": 2708266.0,
+              "mape": 360.14,
+              "rmse": 4044555.44,
+              "testObservations": 4,
+              "mapeSamples": 4,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 4,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08"
+            ]
+          },
+          "naive": {
+            "metrics": {
+              "mae": 993538.25,
+              "mape": 685.18,
+              "rmse": 1097331.49,
+              "testObservations": 4,
+              "mapeSamples": 4,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 4,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08"
+            ]
+          },
+          "moving_average_3": {
+            "metrics": {
+              "mae": 872859.92,
+              "mape": 845.14,
+              "rmse": 1086252.97,
+              "testObservations": 4,
+              "mapeSamples": 4,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 4,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08"
+            ]
+          }
+        }
+      },
+      "2": {
+        "evaluationMethod": "fixed_origin_recursive_horizon",
+        "models": {
+          "xgboost": {
+            "metrics": {
+              "mae": 618762.38,
+              "mape": 679.59,
+              "rmse": 862493.49,
+              "testObservations": 4,
+              "mapeSamples": 4,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 2,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08"
+            ]
+          },
+          "random_forest": {
+            "metrics": {
+              "mae": 620894.79,
+              "mape": 539.84,
+              "rmse": 806975.38,
+              "testObservations": 4,
+              "mapeSamples": 4,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 2,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08"
+            ]
+          },
+          "linear_regression": {
+            "metrics": {
+              "mae": 851852.19,
+              "mape": 87.14,
+              "rmse": 1160957.23,
+              "testObservations": 4,
+              "mapeSamples": 4,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 2,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08"
+            ]
+          },
+          "naive": {
+            "metrics": {
+              "mae": 580707.0,
+              "mape": 455.97,
+              "rmse": 775350.4,
+              "testObservations": 4,
+              "mapeSamples": 4,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 2,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08"
+            ]
+          },
+          "moving_average_3": {
+            "metrics": {
+              "mae": 887072.62,
+              "mape": 892.79,
+              "rmse": 1105538.56,
+              "testObservations": 4,
+              "mapeSamples": 4,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 2,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07",
+              "2026-08"
+            ]
+          }
+        }
+      },
+      "3": {
+        "evaluationMethod": "fixed_origin_recursive_horizon",
+        "models": {
+          "xgboost": {
+            "metrics": {
+              "mae": 560014.42,
+              "mape": 31.87,
+              "rmse": 830886.3,
+              "testObservations": 3,
+              "mapeSamples": 3,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 1,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07"
+            ]
+          },
+          "random_forest": {
+            "metrics": {
+              "mae": 557995.75,
+              "mape": 33.19,
+              "rmse": 816600.76,
+              "testObservations": 3,
+              "mapeSamples": 3,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 1,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07"
+            ]
+          },
+          "linear_regression": {
+            "metrics": {
+              "mae": 1123385.59,
+              "mape": 82.85,
+              "rmse": 1340385.4,
+              "testObservations": 3,
+              "mapeSamples": 3,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 1,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07"
+            ]
+          },
+          "naive": {
+            "metrics": {
+              "mae": 550441.67,
+              "mape": 31.81,
+              "rmse": 811808.42,
+              "testObservations": 3,
+              "mapeSamples": 3,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 1,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07"
+            ]
+          },
+          "moving_average_3": {
+            "metrics": {
+              "mae": 842965.37,
+              "mape": 58.87,
+              "rmse": 1070727.0,
+              "testObservations": 3,
+              "mapeSamples": 3,
+              "zeroActualObservations": 0
+            },
+            "foldCount": 1,
+            "testPeriods": [
+              "2026-05",
+              "2026-06",
+              "2026-07"
+            ]
+          }
+        }
+      }
+    },
+    "futureForecast": [
+      {
+        "period": "2026-09",
+        "forecastRevenue": 953770.94
+      },
+      {
+        "period": "2026-10",
+        "forecastRevenue": 694988.06
+      },
+      {
+        "period": "2026-11",
+        "forecastRevenue": 953770.94
+      }
+    ]
+  }
+}

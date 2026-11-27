@@ -8,6 +8,8 @@ export type RevenueMetrics = {
 };
 
 export type RevenueEvaluationPrediction = {
+  originPeriod?: string;
+  horizon?: number;
   period: string;
   actualRevenue: number;
   predictedRevenue: number;
@@ -27,6 +29,14 @@ export type RevenueComparison = {
   evaluationExecution?: { strategy: string; evaluationFolds: number; trainingRowsByFoldAndStep: number[][]; fallbackUsed: boolean };
 };
 
+export type RevenueOneStepEvaluation = {
+  strategy: string;
+  horizon: 1;
+  models: RevenueComparison[];
+  evaluationPeriodStart: string | null;
+  evaluationPeriodEnd: string | null;
+};
+
 export type RevenueRun = {
   id: string;
   createdAt?: string | null;
@@ -36,6 +46,7 @@ export type RevenueRun = {
   historicalStartDate: string | null;
   historicalEndDate: string | null;
   forecastHorizon: number;
+  evaluationHorizon?: number;
   minimumRequiredMonths: number;
   modelConfig: Record<string, string | number>;
   trainingObservationCount: number;
@@ -45,6 +56,7 @@ export type RevenueRun = {
   evaluationPeriodEnd: string | null;
   metrics: RevenueMetrics;
   evaluationAvailable?: boolean;
+  oneStepEvaluation?: RevenueOneStepEvaluation;
   dataLimitationWarning?: string | null;
   historicalEvaluationRecomputed?: boolean;
   modelComparisons: RevenueComparison[];
@@ -112,6 +124,8 @@ function normalizeEvaluationPrediction(value: unknown, path: string): RevenueEva
     if (typeof value[field] !== 'number' || !Number.isFinite(value[field])) throw new Error(`${path}.${field} must be a finite number.`);
   }
   return {
+    originPeriod: nullableString(value.originPeriod, `${path}.originPeriod`) ?? undefined,
+    horizon: numberOr(value.horizon, 0, `${path}.horizon`) || undefined,
     period: value.period,
     actualRevenue: value.actualRevenue as number,
     predictedRevenue: value.predictedRevenue as number,
@@ -179,6 +193,19 @@ export function normalizeRevenueRun(value: unknown, index: number): RevenueRun {
   if (value.overlapMonthsUsingImportedOnly !== undefined && value.overlapMonthsUsingImportedOnly !== null && (!Array.isArray(value.overlapMonthsUsingImportedOnly) || !value.overlapMonthsUsingImportedOnly.every((month) => typeof month === 'string'))) {
     throw new Error(`${path}.overlapMonthsUsingImportedOnly must be an array of month labels.`);
   }
+  let oneStepEvaluation: RevenueOneStepEvaluation | undefined;
+  if (value.oneStepEvaluation !== undefined && value.oneStepEvaluation !== null) {
+    if (!isRecord(value.oneStepEvaluation)) throw new Error(`${path}.oneStepEvaluation must be an object or null.`);
+    const oneStep = value.oneStepEvaluation;
+    if (oneStep.strategy !== 'expanding_one_step_actual_observation_refit' || oneStep.horizon !== 1) throw new Error(`${path}.oneStepEvaluation has an unsupported strategy or horizon.`);
+    oneStepEvaluation = {
+      strategy: oneStep.strategy,
+      horizon: 1,
+      models: optionalArray(oneStep.models, 'models', `${path}.oneStepEvaluation`, normalizeComparison),
+      evaluationPeriodStart: nullableString(oneStep.evaluationPeriodStart, `${path}.oneStepEvaluation.evaluationPeriodStart`),
+      evaluationPeriodEnd: nullableString(oneStep.evaluationPeriodEnd, `${path}.oneStepEvaluation.evaluationPeriodEnd`),
+    };
+  }
   return {
     id: value.id,
     createdAt: nullableString(value.createdAt, `${path}.createdAt`),
@@ -188,6 +215,7 @@ export function normalizeRevenueRun(value: unknown, index: number): RevenueRun {
     historicalStartDate: nullableString(value.historicalStartDate, `${path}.historicalStartDate`),
     historicalEndDate: nullableString(value.historicalEndDate, `${path}.historicalEndDate`),
     forecastHorizon: numberOr(value.forecastHorizon, 0, `${path}.forecastHorizon`),
+    evaluationHorizon: numberOr(value.evaluationHorizon, 0, `${path}.evaluationHorizon`) || undefined,
     minimumRequiredMonths: numberOr(value.minimumRequiredMonths, 4, `${path}.minimumRequiredMonths`),
     modelConfig,
     trainingObservationCount: numberOr(value.trainingObservationCount, 0, `${path}.trainingObservationCount`),
@@ -197,6 +225,7 @@ export function normalizeRevenueRun(value: unknown, index: number): RevenueRun {
     evaluationPeriodEnd: nullableString(value.evaluationPeriodEnd, `${path}.evaluationPeriodEnd`),
     metrics: normalizeMetrics(value.metrics, `${path}.metrics`),
     evaluationAvailable: value.evaluationAvailable === true,
+    oneStepEvaluation,
     dataLimitationWarning: nullableString(value.dataLimitationWarning, `${path}.dataLimitationWarning`),
     historicalEvaluationRecomputed: value.historicalEvaluationRecomputed === true,
     modelComparisons: optionalArray(value.modelComparisons, 'modelComparisons', path, normalizeComparison),
